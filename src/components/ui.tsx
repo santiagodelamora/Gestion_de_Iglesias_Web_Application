@@ -1,7 +1,7 @@
 "use client";
 
 import { Inbox, Lock, X } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 
 // Componentes básicos de interfaz compartidos por todos los módulos.
 
@@ -195,7 +195,39 @@ export function Indicadores({ children }: { children: ReactNode }) {
   );
 }
 
-export function Indicador({ titulo, valor, detalle }: { titulo: string; valor: ReactNode; detalle?: string }) {
+// Las cifras recorren el tramo desde su valor anterior, despacio al final.
+function useCifra(objetivo: number) {
+  const [valor, setValor] = useState(objetivo);
+  const anterior = useRef(0);
+  useEffect(() => {
+    const desde = anterior.current;
+    anterior.current = objetivo;
+    if (desde === objetivo || matchMedia("(prefers-reduced-motion: reduce)").matches) return setValor(objetivo);
+    const inicio = performance.now();
+    let cuadro = 0;
+    const paso = (ahora: number) => {
+      const t = Math.min((ahora - inicio) / 700, 1);
+      setValor(desde + (objetivo - desde) * (1 - (1 - t) ** 3));
+      if (t < 1) cuadro = requestAnimationFrame(paso);
+    };
+    cuadro = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(cuadro);
+  }, [objetivo]);
+  return valor;
+}
+
+export function Indicador({
+  titulo,
+  valor: objetivo,
+  formato = (n) => String(Math.round(n)),
+  detalle,
+}: {
+  titulo: string;
+  valor: number;
+  formato?: (n: number) => string;
+  detalle?: string;
+}) {
+  const valor = formato(useCifra(objetivo));
   return (
     <div className="min-w-0 flex-1 basis-40 border-l border-t border-piedra-200 px-5 py-4">
       <dt className="text-sm text-piedra-600">{titulo}</dt>
