@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Semana } from "@/components/semana";
-import { Contador, Etiqueta, Indicador, Indicadores, Liston, Papa, Tarjeta } from "@/components/ui";
+import { Encabezado, Etiqueta, Indicador, Indicadores, Liston, Tarjeta } from "@/components/ui";
 import { fechaCorta, fechaLarga, mesCorto, mxn } from "@/lib/formato";
 import { puedeVer, veFinanzas } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
@@ -22,15 +22,14 @@ interface DatosPanel {
 const VACIO: DatosPanel = { miembros: [], eventos: [], ministerios: [], asistencias: [], aportaciones: [], anuncios: [] };
 
 // Estilo común de las gráficas, alineado con la paleta de marca (globals.css)
-const MARCA = "#1f4a7a";
-const MARCA_CLARO = "#9fcaee";
-const MARCA_FONDO = "#cfe4f6";
-const DORADO = "#e9a514";
-const EJE = { fontSize: 12, fill: "#7d684d" };
-const CUADRICULA = "#e9d8b4";
+const MARCA = "#2e5f4b";
+const MARCA_CLARO = "#87b39d";
+const MARCA_FONDO = "#dae8e0";
+const EJE = { fontSize: 12, fill: "#6b7468" };
+const CUADRICULA = "#edefeb";
 const GLOBO = {
-  contentStyle: { borderRadius: 0, border: "2px solid #241c15", boxShadow: "3px 3px 0 0 #241c15", background: "#fdf8ee", fontSize: 13 },
-  cursor: { stroke: "#d4bd8e", fill: "#f6ecd6" },
+  contentStyle: { borderRadius: 8, border: "1px solid #dde1db", boxShadow: "0 8px 24px -10px rgba(17,20,16,.25)", fontSize: 13 },
+  cursor: { stroke: "#b5d1c2", fill: "#eff5f2" },
 };
 
 // Panel principal: indicadores de la sede activa. Cada rol solo carga lo que
@@ -104,7 +103,7 @@ export default function Panel() {
 
   return (
     <>
-      <Bienvenida nombre={usuario!.nombre.split(" ")[0]} fecha={hoy && fechaLarga(hoy)} />
+      <Encabezado titulo={`Hola, ${usuario!.nombre.split(" ")[0]}`} descripcion={hoy && fechaLarga(hoy)} />
 
       <Semana eventos={d.eventos} hoy={hoy} />
 
@@ -114,7 +113,7 @@ export default function Panel() {
           <Indicador titulo="Eventos próximos" valor={datos.proximos} detalle="programados desde hoy" />
           {veAsistencia && <Indicador titulo="Asistencias del mes" valor={datos.asistenciasMes} detalle="presencias registradas" />}
           <Indicador titulo="Ministerios" valor={ministerios.length} detalle="grupos de trabajo" />
-          {finanzas && <Indicador titulo="Ingresos del mes" valor={<Contador valor={datos.ingresoMes} formato={mxn} />} detalle="sin contar aportaciones anuladas" />}
+          {finanzas && <Indicador titulo="Ingresos del mes" valor={mxn(datos.ingresoMes)} detalle="sin contar aportaciones anuladas" />}
         </Indicadores>
       </div>
 
@@ -135,10 +134,10 @@ export default function Panel() {
                     dataKey="asistentes"
                     name="Asistentes"
                     stroke={MARCA}
-                    strokeWidth={3}
+                    strokeWidth={2}
                     fill={MARCA_FONDO}
-                    fillOpacity={0.7}
-                    dot={{ r: 3.5, fill: DORADO, stroke: "#241c15", strokeWidth: 1.5 }}
+                    fillOpacity={0.6}
+                    dot={{ r: 3, fill: "#fff", stroke: MARCA, strokeWidth: 2 }}
                     activeDot={{ r: 5 }}
                   />
                 </AreaChart>
@@ -150,7 +149,7 @@ export default function Panel() {
         {finanzas && (
           <Tarjeta className="p-5">
             <h2 className="font-titulo text-xl font-medium">Ingresos por mes</h2>
-            <p className="mb-4 text-sm text-piedra-500">Aportaciones registradas en pesos; el mes en curso, en dorado</p>
+            <p className="mb-4 text-sm text-piedra-500">Aportaciones registradas en pesos; el mes en curso, en verde oscuro</p>
             <div className="h-60">
               <ResponsiveContainer>
                 <BarChart data={datos.ingresos} margin={{ left: 0, right: 8, top: 4 }}>
@@ -158,9 +157,9 @@ export default function Panel() {
                   <XAxis dataKey="mes" tick={EJE} axisLine={false} tickLine={false} />
                   <YAxis tick={EJE} axisLine={false} tickLine={false} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
                   <Tooltip {...GLOBO} formatter={(v) => mxn(Number(v))} />
-                  <Bar dataKey="total" name="Ingresos" maxBarSize={44} stroke="#241c15" strokeWidth={2}>
+                  <Bar dataKey="total" name="Ingresos" radius={[4, 4, 0, 0]} maxBarSize={44}>
                     {datos.ingresos.map((m) => (
-                      <Cell key={m.mes} fill={m.actual ? DORADO : MARCA_CLARO} />
+                      <Cell key={m.mes} fill={m.actual ? MARCA : MARCA_CLARO} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -183,7 +182,7 @@ function ListaAvisos({ avisos, columnas }: { avisos: Anuncio[]; columnas: boolea
     <ul className={`grid gap-3 ${columnas ? "md:grid-cols-3" : ""}`}>
       {avisos.length === 0 && <li className="text-sm text-piedra-500">No hay avisos publicados.</li>}
       {avisos.map((a) => (
-        <li key={a.id} className="relative border border-piedra-200 p-4 pt-3.5">
+        <li key={a.id} className="relative rounded-lg border border-piedra-200 p-4 pt-3.5">
           {a.importante && <Liston className="right-4 h-7" />}
           <div className="flex flex-wrap items-center gap-2 pr-6">
             <p className="font-semibold text-piedra-900">{a.titulo}</p>
@@ -193,20 +192,5 @@ function ListaAvisos({ avisos, columnas }: { avisos: Anuncio[]; columnas: boolea
         </li>
       ))}
     </ul>
-  );
-}
-
-// Portada del panel: cielo nocturno con la cruz que brilla a la derecha
-function Bienvenida({ nombre, fecha }: { nombre: string; fecha: string }) {
-  return (
-    <section className="pixel relative mb-6 flex items-end justify-between gap-6 overflow-hidden bg-piedra-900 bg-[url(/pixel/fondo.jpg)] bg-cover bg-[center_8%] px-6 pt-6 text-white [image-rendering:pixelated] sm:px-8">
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-piedra-950/85 via-piedra-950/45 to-transparent" />
-      <div className="relative pb-6">
-        <p className="font-titulo text-sm uppercase tracking-wider text-dorado-300">{fecha}</p>
-        <h1 className="mt-1 font-titulo text-4xl font-semibold leading-tight sm:text-5xl">Hola, {nombre}</h1>
-        <p className="mt-2 max-w-md text-piedra-100">Este es el resumen de tu sede.</p>
-      </div>
-      <Papa className="relative hidden shrink-0 self-end mb-3 sm:block" />
-    </section>
   );
 }

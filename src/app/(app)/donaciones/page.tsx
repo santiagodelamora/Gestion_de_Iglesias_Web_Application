@@ -2,7 +2,7 @@
 
 import { Lock, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { Avatar, Boton, Campo, Contador, Dibujo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, Vacio, td, th } from "@/components/ui";
+import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { CONCEPTOS, METODOS } from "@/lib/catalogos";
 import { fechaCorta, mesCorto, mxn } from "@/lib/formato";
 import { acceso } from "@/lib/permisos";
@@ -101,73 +101,46 @@ export default function Donaciones() {
             </Boton>
           )
         }
-        dibujo={<Dibujo nombre="ofrenda" />}
-        fondo="/pixel/fondo-donaciones.jpg"
-      >
-        <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-          {[
-            ["Total del periodo", total, mxn],
-            ["Aportaciones", enPeriodo.length, undefined],
-            ["Diezmos", enPeriodo.filter((a) => a.concepto === "Diezmo").reduce((s, a) => s + a.monto, 0), mxn],
-          ].map(([texto, valor, formato]) => (
-            <div key={texto as string}>
-              <dt className="text-xs font-bold uppercase tracking-wider text-dorado-300">{texto as string}</dt>
-              <dd className="font-titulo text-3xl font-semibold"><Contador valor={valor as number} formato={formato as ((n: number) => string) | undefined} /></dd>
-            </div>
-          ))}
-        </dl>
-      </Encabezado>
+      />
       {!puedeRegistrar && (
-        <p className="mb-4 flex items-center gap-2 bg-dorado-50 px-3 py-2 text-sm text-dorado-800">
+        <p className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           <Lock size={14} /> Tienes acceso de solo lectura.
         </p>
       )}
-      {(error || errorAccion) && <p className="mb-4 bg-liston-50 px-3 py-2 text-sm text-liston-700">{error || errorAccion}</p>}
+      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
 
       <Tarjeta className="mb-4 flex flex-wrap items-end gap-3 p-4">
         <Campo etiqueta="Desde"><Entrada type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></Campo>
         <Campo etiqueta="Hasta"><Entrada type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></Campo>
-        <div className="flex gap-2">
-          {[
-            ["Este mes", `${hoy.slice(0, 7)}-01`],
-            ["Este año", `${hoy.slice(0, 4)}-01-01`],
-          ].map(([texto, inicio]) => (
-            <Boton key={texto} variante={desde === inicio && hasta === hoy ? "primario" : "secundario"} onClick={() => { setDesde(inicio); setHasta(hoy); }}>
-              {texto}
-            </Boton>
-          ))}
+        <div className="ml-auto text-right">
+          <p className="text-xs text-piedra-500">Total del periodo</p>
+          <p className="text-2xl font-semibold">{mxn(total)}</p>
+          <p className="text-xs text-piedra-500">{enPeriodo.length} aportaciones</p>
         </div>
-        <p className="ml-auto text-sm text-piedra-500">{enPeriodo.length} aportaciones · <span className="font-titulo text-lg font-semibold text-piedra-900">{mxn(total)}</span></p>
       </Tarjeta>
 
-      <div className="flex flex-col gap-4">
-        <Tarjeta className="order-2">
-          <h2 className="border-b-2 border-piedra-200 p-4 font-titulo text-xl font-semibold">Movimientos del periodo</h2>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Tarjeta className="lg:col-span-2">
+          <h2 className="border-b border-piedra-200 p-4 font-semibold">Movimientos del periodo</h2>
           <div className="max-h-[520px] overflow-y-auto">
             <Tabla>
               <thead>
                 <tr>
-                  <th className={th}>Fecha</th><th className={th}>Concepto</th><th className={th}>Aportante</th><th className={th}>Método</th><th className={`${th} text-right!`}>Monto</th>
+                  <th className={th}>Fecha</th><th className={th}>Concepto</th><th className={th}>Aportante</th><th className={th}>Método</th><th className={`${th} text-right`}>Monto</th>
                   {puedeRegistrar && <th className={th}></th>}
                 </tr>
               </thead>
               <tbody>
                 {movimientos.map((a) => (
-                  <tr key={a.id} className={a.anulada ? "bg-piedra-50 text-piedra-400" : ""}>
+                  <tr key={a.id} className={a.anulada ? "text-piedra-400" : ""}>
                     <td className={`${td} whitespace-nowrap`}>{fechaCorta(a.fecha)}</td>
                     <td className={td}>{a.concepto} {a.anulada && <Etiqueta tono="rojo">Anulada</Etiqueta>}</td>
-                    <td className={td}>
-                      {nombre(a.miembroId) ? (
-                        <span className="flex items-center gap-2 whitespace-nowrap" title={nombre(a.miembroId)}><Avatar nombre={nombre(a.miembroId)!} /> {nombre(a.miembroId)!.split(" ").slice(0, 2).join(" ")}</span>
-                      ) : (
-                        <Etiqueta>Anónimo</Etiqueta>
-                      )}
-                    </td>
-                    <td className={`${td} whitespace-nowrap`}>{a.metodo}</td>
-                    <td className={`${td} whitespace-nowrap text-right font-titulo font-semibold ${a.anulada ? "line-through" : "text-olivo-800"}`}>{mxn(a.monto)}</td>
+                    <td className={td}>{nombre(a.miembroId) ?? <Etiqueta>Anónimo</Etiqueta>}</td>
+                    <td className={td}>{a.metodo}</td>
+                    <td className={`${td} text-right font-medium ${a.anulada ? "line-through" : ""}`}>{mxn(a.monto)}</td>
                     {puedeRegistrar && (
                       <td className={`${td} text-right`}>
-                        <button className="text-xs text-piedra-500 hover:text-liston-600" onClick={() => alternarAnulada(a)}>
+                        <button className="text-xs text-piedra-500 hover:text-red-600" onClick={() => alternarAnulada(a)}>
                           {a.anulada ? "Restaurar" : "Anular"}
                         </button>
                       </td>
@@ -180,22 +153,24 @@ export default function Donaciones() {
           </div>
         </Tarjeta>
 
-        <div className="order-1 grid items-start gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
           <Tarjeta className="p-4">
-            <h2 className="mb-3 font-titulo text-xl font-semibold">Por concepto</h2>
+            <h2 className="mb-3 font-semibold">Por concepto</h2>
             <ul className="space-y-2 text-sm">
               {porConcepto.map(([c, monto]) => (
                 <li key={c}>
                   <div className="flex justify-between"><span>{c}</span><span className="font-medium">{mxn(monto)}</span></div>
-                  <Bloques valor={monto} total={total} etiqueta={c} />
+                  <div className="mt-1 h-1.5 rounded-full bg-piedra-100">
+                    <div className="h-1.5 rounded-full bg-marca-500" style={{ width: `${(monto / total) * 100}%` }} />
+                  </div>
                 </li>
               ))}
             </ul>
           </Tarjeta>
           <Tarjeta>
-            <h2 className="border-b-2 border-piedra-200 p-4 font-titulo text-xl font-semibold">Resumen mensual</h2>
+            <h2 className="border-b border-piedra-200 p-4 font-semibold">Resumen mensual</h2>
             <Tabla>
-              <thead><tr><th className={th}>Mes</th><th className={`${th} text-right!`}>Diezmos</th><th className={`${th} text-right!`}>Total</th></tr></thead>
+              <thead><tr><th className={th}>Mes</th><th className={`${th} text-right`}>Diezmos</th><th className={`${th} text-right`}>Total</th></tr></thead>
               <tbody>
                 {resumen.map(([mes, r]) => (
                   <tr key={mes}>
@@ -244,31 +219,10 @@ export default function Donaciones() {
                 </Selector>
               </Campo>
             )}
-            {errorForm && <p className="text-sm text-liston-600">{errorForm}</p>}
+            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
           </>
         )}
       </Modal>
     </>
-  );
-}
-
-// Barra por bloques, igual que en asistencia
-function Bloques({ valor, total, etiqueta }: { valor: number; total: number; etiqueta: string }) {
-  const bloques = 16;
-  const llenos = total ? Math.max(1, Math.round((valor / total) * bloques)) : 0;
-  return (
-    <div
-      role="meter"
-      aria-valuemin={0}
-      aria-valuemax={total}
-      aria-valuenow={valor}
-      aria-label={etiqueta}
-      className="mt-1 grid h-4 gap-0.5 border-2 border-piedra-900 bg-piedra-200 p-0.5"
-      style={{ gridTemplateColumns: `repeat(${bloques}, 1fr)` }}
-    >
-      {Array.from({ length: bloques }, (_, i) => (
-        <span key={i} className={i < llenos ? "animate-bloque bg-dorado-600" : "bg-piedra-50"} style={{ animationDelay: `${150 + i * 45}ms` }} />
-      ))}
-    </div>
   );
 }

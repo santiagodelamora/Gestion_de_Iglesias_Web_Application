@@ -2,8 +2,8 @@
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { AreaTexto, Boton, Campo, Contador, Dibujo, Encabezado, Entrada, Etiqueta, Liston, Modal, Selector, SinAcceso, Tarjeta, Vacio, elevar } from "@/components/ui";
-import { aFecha, fechaLarga, MESES } from "@/lib/formato";
+import { AreaTexto, Boton, Campo, Encabezado, Entrada, Etiqueta, Liston, Modal, Selector, SinAcceso, Tarjeta, Vacio } from "@/components/ui";
+import { fechaLarga } from "@/lib/formato";
 import { acceso } from "@/lib/permisos";
 import type { DatosAnuncio } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
@@ -65,62 +65,38 @@ export default function Comunicados() {
             </Boton>
           )
         }
-        dibujo={<Dibujo nombre="avisos" />}
-        fondo="/pixel/fondo-comunicados.jpg"
-      >
-        <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-          {[
-            ["Publicados", lista.filter((a) => a.fechaPublicacion <= hoy).length],
-            ["Importantes", lista.filter((a) => a.importante).length],
-            ...(puedeEditar ? [["Programados", lista.filter((a) => a.fechaPublicacion > hoy).length]] : []),
-          ].map(([texto, valor]) => (
-            <div key={texto}>
-              <dt className="text-xs font-bold uppercase tracking-wider text-dorado-300">{texto}</dt>
-              <dd className="font-titulo text-3xl font-semibold"><Contador valor={valor as number} /></dd>
-            </div>
-          ))}
-        </dl>
-      </Encabezado>
-      {(error || errorAccion) && <p className="mb-4 bg-liston-50 px-3 py-2 text-sm text-liston-700">{error || errorAccion}</p>}
-      {cargando && <Vacio>Cargando…</Vacio>}
-      {!cargando && lista.length === 0 && <Tarjeta><Vacio>No hay anuncios publicados.</Vacio></Tarjeta>}
-      {/* Tablón de avisos: cada anuncio es una hoja clavada con una tachuela */}
-      <div className="grid gap-5 md:grid-cols-2">
-        {lista.map((a) => {
-          const fecha = aFecha(a.fechaPublicacion);
-          return (
-            <Tarjeta key={a.id} className={`relative flex gap-4 p-5 pt-6 ${elevar} ${a.importante ? "border-liston-700!" : ""}`}>
-              <span aria-hidden className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 border-2 border-piedra-900 bg-liston-600" />
-              {a.importante && <Liston className="left-1.5 h-10" />}
-              <div className="flex w-14 shrink-0 flex-col items-center self-start border-2 border-piedra-900 bg-piedra-100 text-center">
-                <span className="w-full bg-marca-900 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">{MESES[fecha.getMonth()].slice(0, 3)}</span>
-                <span className="py-1 font-titulo text-2xl font-semibold text-piedra-900">{fecha.getDate()}</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-titulo text-lg font-semibold leading-snug text-piedra-900">{a.titulo}</h2>
-                  {administra(a) && (
-                    <div className="-mr-2 -mt-1 flex shrink-0">
-                      <Boton variante="fantasma" className="px-2" aria-label="Editar" onClick={() => abrir({ titulo: a.titulo, contenido: a.contenido, fechaPublicacion: a.fechaPublicacion, importante: a.importante, sedeId: a.sedeId }, a.id)}>
-                        <Pencil size={15} />
-                      </Boton>
-                      <Boton variante="fantasma" aria-label="Eliminar" className="px-2 hover:text-liston-600" onClick={() => eliminar(a.id)}>
-                        <Trash2 size={15} />
-                      </Boton>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
+      />
+      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
+      <div className="space-y-3">
+        {cargando && <Vacio>Cargando…</Vacio>}
+        {!cargando && lista.length === 0 && <Tarjeta><Vacio>No hay anuncios publicados.</Vacio></Tarjeta>}
+        {lista.map((a) => (
+          <Tarjeta key={a.id} className="relative p-5">
+            {a.importante && <Liston className="left-5 h-4" />}
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-semibold">{a.titulo}</h2>
                   {a.importante && <Etiqueta tono="liston">Importante</Etiqueta>}
                   {a.sedeId === null && <Etiqueta tono="marca">Todas las sedes</Etiqueta>}
                   {a.fechaPublicacion > hoy && <Etiqueta>Programado</Etiqueta>}
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-piedra-700">{a.contenido}</p>
-                <p className="mt-3 text-xs text-piedra-500">{fechaLarga(a.fechaPublicacion)}{a.autorNombre && ` · ${a.autorNombre}`}</p>
+                <p className="mt-1 text-xs text-piedra-500">{fechaLarga(a.fechaPublicacion)}{a.autorNombre && ` · ${a.autorNombre}`}</p>
               </div>
-            </Tarjeta>
-          );
-        })}
+              {administra(a) && (
+                <div className="flex gap-1">
+                  <Boton variante="fantasma" aria-label="Editar" onClick={() => abrir({ titulo: a.titulo, contenido: a.contenido, fechaPublicacion: a.fechaPublicacion, importante: a.importante, sedeId: a.sedeId }, a.id)}>
+                    <Pencil size={15} />
+                  </Boton>
+                  <Boton variante="fantasma" aria-label="Eliminar" className="hover:text-red-600" onClick={() => eliminar(a.id)}>
+                    <Trash2 size={15} />
+                  </Boton>
+                </div>
+              )}
+            </div>
+            <p className="mt-3 text-sm text-piedra-700">{a.contenido}</p>
+          </Tarjeta>
+        ))}
       </div>
 
       <Modal
@@ -152,7 +128,7 @@ export default function Comunicados() {
               <input type="checkbox" checked={form.importante} onChange={(e) => setForm({ ...form, importante: e.target.checked })} />
               Marcar como aviso importante
             </label>
-            {errorForm && <p className="text-sm text-liston-600">{errorForm}</p>}
+            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
           </>
         )}
       </Modal>

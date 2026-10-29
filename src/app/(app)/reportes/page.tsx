@@ -2,7 +2,7 @@
 
 import { FileSpreadsheet, FileText } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { Boton, Campo, Contador, Dibujo, Encabezado, Entrada, Pestanas, SinAcceso, Tabla, Tarjeta, Vacio, td, th } from "@/components/ui";
+import { Boton, Campo, Encabezado, Entrada, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { iso } from "@/lib/datos-ejemplo";
 import { aFecha, fechaCorta, mesCorto, mxn } from "@/lib/formato";
 import { reportesPermitidos } from "@/lib/permisos";
@@ -136,8 +136,6 @@ export default function Reportes() {
     setErrorExportar(await intentar(() => (formato === "excel" ? exportarExcel(completo) : exportarPdf(completo))));
     setExportando(false);
   };
-  // Columnas con números o porcentajes van alineadas a la derecha
-  const numerica = (j: number) => j > 0 && reporte.filas.some((f) => typeof f[j] === "number" || /%$/.test(String(f[j])));
   const mostrar = (i: number, v: Valor) => (reporte.moneda?.includes(i) ? mxn(Number(v)) : v);
 
   return (
@@ -148,39 +146,33 @@ export default function Reportes() {
           descripcion={`Información de ${sede?.nombre ?? ""}`}
           acciones={
             <>
-              <Boton disabled={exportando || cargando} onClick={() => exportar("excel")}>
+              <Boton variante="secundario" disabled={exportando || cargando} onClick={() => exportar("excel")}>
                 <FileSpreadsheet size={16} /> Exportar a Excel
               </Boton>
-              <Boton disabled={exportando || cargando} onClick={() => exportar("pdf")}>
+              <Boton variante="secundario" disabled={exportando || cargando} onClick={() => exportar("pdf")}>
                 <FileText size={16} /> Exportar a PDF
               </Boton>
             </>
           }
-          dibujo={<Dibujo nombre="libro" />}
-          fondo="/pixel/fondo-reportes.jpg"
-        >
-          <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-            {[
-              ["Reportes disponibles", permitidos.length],
-              ["Registros", reporte.filas.length],
-            ].map(([texto, valor]) => (
-              <div key={texto}>
-                <dt className="text-xs font-bold uppercase tracking-wider text-dorado-300">{texto}</dt>
-                <dd className="font-titulo text-3xl font-semibold"><Contador valor={valor as number} /></dd>
-              </div>
-            ))}
-          </dl>
-        </Encabezado>
-        {(error || errorExportar) && <p className="mb-4 bg-liston-50 px-3 py-2 text-sm text-liston-700">{error || errorExportar}</p>}
-        <div className="mb-4">
-          <Pestanas valor={tipo} alCambiar={setTipo} opciones={permitidos.map((p) => ({ valor: p, texto: NOMBRES[p] }))} />
+        />
+        {(error || errorExportar) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorExportar}</p>}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {permitidos.map((p) => (
+            <button
+              key={p}
+              onClick={() => setTipo(p)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium ${tipo === p ? "bg-marca-600 text-white" : "bg-white text-piedra-600 ring-1 ring-piedra-200 hover:bg-piedra-50"}`}
+            >
+              {NOMBRES[p]}
+            </button>
+          ))}
         </div>
       </div>
 
       <Tarjeta>
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-piedra-200 p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-piedra-200 p-4">
           <div>
-            <h2 className="font-titulo text-xl font-semibold">{NOMBRES[tipo]}</h2>
+            <h2 className="font-semibold">{NOMBRES[tipo]}</h2>
             <p className="text-xs text-piedra-500">{completo.subtitulo}</p>
           </div>
           {usaPeriodo && (
@@ -192,46 +184,18 @@ export default function Reportes() {
         </div>
         <Tabla>
           <thead>
-            <tr>{reporte.columnas.map((c, j) => <th key={c} className={`${th} ${numerica(j) ? "text-right!" : ""}`}>{c}</th>)}</tr>
+            <tr>{reporte.columnas.map((c) => <th key={c} className={th}>{c}</th>)}</tr>
           </thead>
           <tbody>
             {reporte.filas.map((f, i) => (
               <tr key={i}>
-                {f.map((v, j) => (
-                  <td key={j} className={`${td} ${j > 0 && j < 4 ? "whitespace-nowrap" : ""} ${numerica(j) ? "text-right tabular-nums" : ""}`}>
-                    {reporte.columnas[j] === "% asistencia" && v !== "—" ? <Porcentaje texto={String(v)} /> : mostrar(j, v)}
-                  </td>
-                ))}
+                {f.map((v, j) => <td key={j} className={`${td} ${j > 0 && j < 4 ? "whitespace-nowrap" : ""}`}>{mostrar(j, v)}</td>)}
               </tr>
             ))}
           </tbody>
-          {tipo === "ingresos" && reporte.filas.length > 0 && (
-            <tfoot>
-              <tr className="border-t-2 border-piedra-800 bg-piedra-100 font-titulo font-semibold">
-                {reporte.columnas.map((c, j) => (
-                  <td key={c} className={`${td} ${j ? "text-right tabular-nums" : ""}`}>
-                    {j ? mostrar(j, reporte.filas.reduce((suma, f) => suma + Number(f[j]), 0)) : "Total"}
-                  </td>
-                ))}
-              </tr>
-            </tfoot>
-          )}
         </Tabla>
         {cargando ? <Vacio>Cargando…</Vacio> : <p className="p-4 text-xs text-piedra-500">{reporte.filas.length} registros</p>}
       </Tarjeta>
     </>
-  );
-}
-
-// Porcentaje con una barrita de bloques, como en asistencia
-function Porcentaje({ texto }: { texto: string }) {
-  const llenos = Math.round(parseInt(texto) / 10);
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className="grid h-3 w-20 grid-cols-10 gap-px border-2 border-piedra-900 bg-piedra-200 p-px" aria-hidden>
-        {Array.from({ length: 10 }, (_, i) => <span key={i} className={i < llenos ? "animate-bloque bg-olivo-600" : "bg-piedra-50"} style={{ animationDelay: `${150 + i * 45}ms` }} />)}
-      </span>
-      {texto}
-    </span>
   );
 }

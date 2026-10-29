@@ -1,83 +1,66 @@
 @import "tailwindcss";
 
-/* Identidad visual en pixel art, con los colores de los dibujos de la iglesia:
-   azul de vitral y cielo nocturno como marca, rojo del techo como acento, verde
-   de los arbustos para lo que está bien, dorado de la cruz para lo destacado y
-   neutros de pergamino, como las páginas de la Biblia. */
+/* Identidad visual: el verde pino del tiempo ordinario como marca, el carmín
+   del listón de la Biblia como único acento (marca dónde estás, lo importante
+   y los domingos), olivo para lo que está bien y neutros de piedra verdosa. */
 @theme {
-  --color-papel: #f6ecd6;
+  --color-papel: #f3f5f2;
 
-  --color-marca-50: #eaf3fb;
-  --color-marca-100: #cfe4f6;
-  --color-marca-200: #9fcaee;
-  --color-marca-300: #63aae2;
-  --color-marca-400: #3b8fd4;
-  --color-marca-500: #2a73b8;
-  --color-marca-600: #245c96;
-  --color-marca-700: #1f4a7a;
-  --color-marca-800: #1b3c63;
-  --color-marca-900: #172f4e;
-  --color-marca-950: #0e1d33;
+  --color-marca-50: #eff5f2;
+  --color-marca-100: #dae8e0;
+  --color-marca-200: #b5d1c2;
+  --color-marca-300: #87b39d;
+  --color-marca-400: #5a9078;
+  --color-marca-500: #3d755d;
+  --color-marca-600: #2e5f4b;
+  --color-marca-700: #254d3d;
+  --color-marca-800: #1f3f33;
+  --color-marca-900: #1a342b;
+  --color-marca-950: #0f211b;
 
-  --color-liston-50: #fdf0ee;
-  --color-liston-100: #fadbd6;
-  --color-liston-200: #f4b5ab;
-  --color-liston-300: #ea8576;
-  --color-liston-400: #dc5844;
-  --color-liston-500: #c8391f;
-  --color-liston-600: #a92d18;
-  --color-liston-700: #8a2516;
-  --color-liston-800: #6e2014;
+  --color-liston-50: #fbf0f1;
+  --color-liston-100: #f6dcdf;
+  --color-liston-200: #edb8bf;
+  --color-liston-300: #df8c97;
+  --color-liston-400: #ca5e6e;
+  --color-liston-500: #b23f52;
+  --color-liston-600: #9b2c3c;
+  --color-liston-700: #812434;
+  --color-liston-800: #6a1f2c;
 
-  --color-olivo-50: #eef7ea;
-  --color-olivo-100: #d8eccf;
-  --color-olivo-200: #b1d9a0;
-  --color-olivo-300: #84c06b;
-  --color-olivo-400: #5ea544;
-  --color-olivo-500: #458a2f;
-  --color-olivo-600: #366f25;
-  --color-olivo-700: #2c581f;
-  --color-olivo-800: #24461b;
-  --color-olivo-900: #1d3916;
+  --color-olivo-50: #f4f6ec;
+  --color-olivo-100: #e6ebd2;
+  --color-olivo-200: #cdd8a8;
+  --color-olivo-300: #adc077;
+  --color-olivo-400: #8ea44f;
+  --color-olivo-500: #728838;
+  --color-olivo-600: #5a6d2b;
+  --color-olivo-700: #475524;
+  --color-olivo-800: #3a4520;
+  --color-olivo-900: #313a1e;
 
-  --color-dorado-100: #fdf1c9;
-  --color-dorado-200: #fbe39a;
-  --color-dorado-300: #f9d36b;
-  --color-dorado-400: #f5c03a;
-  --color-dorado-500: #e9a514;
-  --color-dorado-600: #c4860c;
-  --color-dorado-700: #9a650c;
+  --color-piedra-50: #f6f7f5;
+  --color-piedra-100: #edefeb;
+  --color-piedra-200: #dde1db;
+  --color-piedra-300: #c3c9c0;
+  --color-piedra-400: #959d92;
+  --color-piedra-500: #6b7468;
+  --color-piedra-600: #555d53;
+  --color-piedra-700: #434a42;
+  --color-piedra-800: #2e332d;
+  --color-piedra-900: #1d211c;
+  --color-piedra-950: #111410;
 
-  --color-piedra-50: #fdf8ee;
-  --color-piedra-100: #f6ecd6;
-  --color-piedra-200: #e9d8b4;
-  --color-piedra-300: #d4bd8e;
-  --color-piedra-400: #a8906a;
-  --color-piedra-500: #7d684d;
-  --color-piedra-600: #5f4d39;
-  --color-piedra-700: #4a3b2c;
-  --color-piedra-800: #34291f;
-  --color-piedra-900: #241c15;
-  --color-piedra-950: #16110c;
-
-  --animate-aparecer: aparecer 220ms ease-out;
-  --animate-emerger: emerger 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-aparecer: aparecer 160ms ease-out;
+  --animate-emerger: emerger 180ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
   --animate-deslizar: deslizar 220ms ease-out;
   --animate-caer: caer 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  --animate-flotar: flotar 3.2s ease-in-out infinite;
-  --animate-brillar: brillar 2.4s ease-in-out infinite;
-  --animate-titilar: titilar 2.8s steps(2, jump-none) infinite;
-  --animate-cursor: cursor 0.9s steps(1) infinite;
-  --animate-subir: subir 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-caminar: caminar 2.6s linear forwards;
-  --animate-paso: paso 0.32s steps(1) infinite;
-  --animate-bloque: bloque 260ms steps(2, jump-none) both;
 
   @keyframes aparecer {
     from { opacity: 0; }
   }
   @keyframes emerger {
-    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
   }
   @keyframes deslizar {
     from { transform: translateX(-100%); }
@@ -86,49 +69,12 @@
   @keyframes caer {
     from { transform: translateY(-2.5rem); }
   }
-  /* Los dibujos respiran: suben y bajan en pasos, como un sprite de videojuego */
-  @keyframes flotar {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-  }
-  @keyframes brillar {
-    0%, 100% { filter: drop-shadow(0 0 0 rgb(245 192 58 / 0)); }
-    50% { filter: drop-shadow(0 0 14px rgb(245 192 58 / 0.75)); }
-  }
-  @keyframes titilar {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.25; }
-  }
-  /* El cursor ▶ del menú parpadea como en la pantalla de un juego */
-  @keyframes cursor {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-  /* El humanito camina hasta la puerta de la iglesia y entra */
-  @keyframes caminar {
-    0% { left: 6%; opacity: 1; transform: translateX(-50%) scale(1); }
-    78% { left: 50%; opacity: 1; transform: translateX(-50%) scale(1); }
-    100% { left: 50%; opacity: 0; transform: translateX(-50%) translateY(-4px) scale(0.55); }
-  }
-  /* Rebote de cada paso, a saltos como un sprite */
-  @keyframes paso {
-    0%, 100% { transform: translateY(0) rotate(-3deg); }
-    50% { transform: translateY(-4px) rotate(3deg); }
-  }
-  /* Las barras se llenan bloque por bloque: cada bloque parte vacío */
-  @keyframes bloque {
-    from { background-color: var(--color-piedra-50); }
-  }
-  /* Entrada de cada bloque de la página, uno tras otro */
-  @keyframes subir {
-    from { opacity: 0; transform: translateY(12px); }
-  }
 }
 
 /* Las fuentes las carga next/font en el layout raíz como variables CSS */
 @theme inline {
   --font-sans: var(--fuente-texto), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-titulo: var(--fuente-titulo), ui-monospace, "Courier New", monospace;
+  --font-titulo: var(--fuente-titulo), Georgia, "Times New Roman", serif;
 }
 
 body {
@@ -138,37 +84,9 @@ body {
 }
 
 ::selection {
-  background: var(--color-dorado-300);
-  color: var(--color-piedra-950);
+  background: var(--color-marca-100);
+  color: var(--color-marca-900);
 }
-
-/* Bordes gruesos y sombra dura sin desenfoque: el bloque de un juego en pixel art */
-.pixel {
-  border: 3px solid var(--color-piedra-900);
-  box-shadow: 4px 4px 0 0 var(--color-piedra-900);
-}
-/* Tarjetas: borde fino y sombra corta, para no recargar la pantalla */
-.pixel-suave {
-  border: 1px solid var(--color-piedra-800);
-  box-shadow: 2px 2px 0 0 rgb(36 28 21 / 0.8);
-}
-
-/* Las imágenes en pixel art se escalan sin suavizar */
-.sprite {
-  image-rendering: pixelated;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-/* Los hijos directos entran escalonados */
-.escalonado > * {
-  animation: var(--animate-subir);
-}
-.escalonado > *:nth-child(2) { animation-delay: 70ms; }
-.escalonado > *:nth-child(3) { animation-delay: 140ms; }
-.escalonado > *:nth-child(4) { animation-delay: 210ms; }
-.escalonado > *:nth-child(5) { animation-delay: 280ms; }
-.escalonado > *:nth-child(n + 6) { animation-delay: 350ms; }
 
 /* Punta en V del listón, como la cinta que marca la página en una Biblia */
 .liston {
@@ -179,8 +97,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    animation-delay: 0ms !important;
     transition-duration: 1ms !important;
   }
 }
