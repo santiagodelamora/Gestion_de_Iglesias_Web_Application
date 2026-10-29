@@ -113,7 +113,7 @@ export default function Panel() {
           <Indicador titulo="Eventos próximos" valor={datos.proximos} detalle="programados desde hoy" />
           {veAsistencia && <Indicador titulo="Asistencias del mes" valor={datos.asistenciasMes} detalle="presencias registradas" />}
           <Indicador titulo="Ministerios" valor={ministerios.length} detalle="grupos de trabajo" />
-          {finanzas && <Indicador titulo="Ingresos del mes" valor={mxn(datos.ingresoMes)} detalle="sin contar aportaciones anuladas" />}
+          {finanzas && <Indicador titulo="Ingresos del mes" valor={datos.ingresoMes} formato={mxn} detalle="sin contar aportaciones anuladas" />}
         </Indicadores>
       </div>
 

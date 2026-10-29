@@ -208,7 +208,8 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
           </button>
           <p className="min-w-0 truncate font-titulo text-lg font-medium text-piedra-900">{db.configuracion.nombre}</p>
         </header>
-        <main className="mx-auto max-w-7xl animate-aparecer px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+        {/* La clave repite la entrada suave en cada cambio de página */}
+        <main key={ruta} className="mx-auto max-w-7xl animate-entrar px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
           {children}
         </main>
       </div>
