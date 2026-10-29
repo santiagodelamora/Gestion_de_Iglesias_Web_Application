@@ -2,10 +2,10 @@
 
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { AreaTexto, Boton, Campo, Contador, Dibujo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tarjeta } from "@/components/ui";
+import { AreaTexto, Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tarjeta } from "@/components/ui";
 import { TIPOS_EVENTO } from "@/lib/catalogos";
 import { iso } from "@/lib/datos-ejemplo";
-import { aFecha, fechaCorta, fechaLarga, MESES } from "@/lib/formato";
+import { aFecha, fechaLarga, MESES } from "@/lib/formato";
 import { acceso } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
 import type { Evento, Miembro, Ministerio, TipoEvento } from "@/lib/types";
@@ -107,18 +107,6 @@ export default function Eventos() {
     recargar();
   };
 
-  const activos = eventos.filter((e) => !e.cancelado);
-  const delMesActual = activos.filter((e) => e.fecha.startsWith(hoy.slice(0, 7))).length;
-  const enSieteDias = (() => {
-    const d = aFecha(hoy);
-    d.setDate(d.getDate() + 6);
-    return iso(d);
-  })();
-  const proximaSemana = activos.filter((e) => e.fecha >= hoy && e.fecha <= enSieteDias).length;
-  const siguiente = activos
-    .filter((e) => e.fecha >= hoy)
-    .sort((x, y) => (x.fecha + x.hora).localeCompare(y.fecha + y.hora))[0];
-
   const nombreMiembro = (id: string) => miembros.find((m) => m.id === id)?.nombre ?? "—";
   const [a, m] = mes.split("-").map(Number);
   const ministeriosElegibles = permiso === "ministerio" ? misMinisterios : ministerios;
@@ -129,53 +117,32 @@ export default function Eventos() {
         titulo="Eventos"
         descripcion="Cultos, reuniones y actividades de la sede"
         acciones={puedeEditar() && <Boton onClick={() => abrirNuevo()}><Plus size={16} /> Nuevo evento</Boton>}
-        dibujo={<Dibujo nombre="campanario" />}
-        fondo="/pixel/fondo-eventos.jpg"
-      >
-        <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-dorado-300">Este mes</dt>
-            <dd className="font-titulo text-3xl font-semibold"><Contador valor={delMesActual} /></dd>
-          </div>
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-dorado-300">Próximos 7 días</dt>
-            <dd className="font-titulo text-3xl font-semibold"><Contador valor={proximaSemana} /></dd>
-          </div>
-          {siguiente && (
-            <div className="max-w-56">
-              <dt className="text-xs font-bold uppercase tracking-wider text-dorado-300">Sigue</dt>
-              <dd className="mt-1 truncate font-bold">{siguiente.titulo}</dd>
-              <dd className="text-sm text-piedra-100">{fechaCorta(siguiente.fecha)}, {siguiente.hora}</dd>
-            </div>
-          )}
-        </dl>
-      </Encabezado>
-      {(error || errorAccion) && <p className="mb-4 bg-liston-50 px-3 py-2 text-sm text-liston-700">{error || errorAccion}</p>}
+      />
+      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
       <Tarjeta>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-piedra-900 bg-marca-900 p-4 text-white">
-          <h2 key={mes} className="animate-subir font-titulo text-2xl font-semibold capitalize">{MESES[m - 1]} {a}</h2>
-          <div className="flex gap-2">
-            <Boton onClick={() => moverMes(-1)} aria-label="Mes anterior"><ChevronLeft size={16} /></Boton>
-            <Boton onClick={() => setMes(hoy.slice(0, 7))}>Hoy</Boton>
-            <Boton onClick={() => moverMes(1)} aria-label="Mes siguiente"><ChevronRight size={16} /></Boton>
+        <div className="flex items-center justify-between border-b border-piedra-200 p-4">
+          <h2 className="font-titulo text-2xl font-medium capitalize">{MESES[m - 1]} {a}</h2>
+          <div className="flex gap-1">
+            <Boton variante="secundario" onClick={() => moverMes(-1)} aria-label="Mes anterior"><ChevronLeft size={16} /></Boton>
+            <Boton variante="secundario" onClick={() => setMes(hoy.slice(0, 7))}>Hoy</Boton>
+            <Boton variante="secundario" onClick={() => moverMes(1)} aria-label="Mes siguiente"><ChevronRight size={16} /></Boton>
           </div>
         </div>
-        <div className="grid grid-cols-7 border-b-2 border-piedra-800 bg-piedra-100 text-center font-titulo text-[13px] font-medium text-piedra-700">
+        <div className="grid grid-cols-7 border-b border-piedra-200 text-center text-xs font-semibold text-piedra-500">
           {/* Los domingos en carmín, como en los calendarios impresos */}
           {DIAS.map((d, i) => <div key={d} className={`py-2 ${i === 0 ? "text-liston-600" : ""}`}>{d}</div>)}
         </div>
-        <div key={mes} className="grid animate-subir grid-cols-7">
+        <div className="grid grid-cols-7">
           {dias.map((d, i) => {
             const delDia = eventos.filter((e) => e.fecha === d.fecha).sort((x, y) => x.hora.localeCompare(y.hora));
-            const esHoy = d.fecha === hoy;
             return (
               <div
                 key={d.fecha}
-                className={`min-h-24 border-b border-r border-piedra-200 p-1.5 ${esHoy ? "bg-dorado-100" : d.delMes ? "" : "bg-piedra-100/60 text-piedra-400"}`}
+                className={`min-h-24 border-b border-r border-piedra-100 p-1.5 ${d.delMes ? "" : "bg-piedra-50/60 text-piedra-400"}`}
                 onDoubleClick={() => puedeEditar() && abrirNuevo(d.fecha)}
               >
-                <span className={`inline-flex h-6 min-w-6 items-center justify-center px-1 font-titulo text-sm ${
-                    esHoy ? "border-2 border-piedra-900 bg-marca-700 font-semibold text-white" : i % 7 === 0 && d.delMes ? "font-semibold text-liston-600" : ""
+                <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs tabular-nums ${
+                    d.fecha === hoy ? "bg-marca-700 font-semibold text-white" : i % 7 === 0 && d.delMes ? "font-semibold text-liston-600" : ""
                   }`}>
                   {d.dia}
                 </span>
@@ -184,12 +151,8 @@ export default function Eventos() {
                     <button
                       key={e.id}
                       onClick={() => setSeleccionado(e)}
-                      className={`block w-full truncate border-l-4 px-1.5 py-0.5 text-left text-[11px] font-semibold transition-transform hover:translate-x-0.5 ${
-                        e.cancelado
-                          ? "border-piedra-400 bg-piedra-100 text-piedra-400 line-through"
-                          : e.ministerioId
-                            ? "border-olivo-500 bg-olivo-50 text-olivo-800"
-                            : "border-marca-600 bg-marca-50 text-marca-800"
+                      className={`block w-full truncate rounded-sm px-1.5 py-0.5 text-left text-[11px] ${
+                        e.cancelado ? "bg-piedra-100 text-piedra-400 line-through" : e.ministerioId ? "bg-olivo-50 text-olivo-800" : "bg-marca-50 text-marca-800"
                       }`}
                     >
                       {e.hora} {e.titulo}
@@ -199,13 +162,6 @@ export default function Eventos() {
               </div>
             );
           })}
-        </div>
-        {/* Qué significa cada color */}
-        <div className="flex flex-wrap gap-x-5 gap-y-1 p-3 text-xs text-piedra-600">
-          <span className="flex items-center gap-1.5"><span className="h-3 w-3 border-l-4 border-marca-600 bg-marca-50" /> De la sede</span>
-          <span className="flex items-center gap-1.5"><span className="h-3 w-3 border-l-4 border-olivo-500 bg-olivo-50" /> De un ministerio</span>
-          <span className="flex items-center gap-1.5"><span className="h-3 w-3 border-l-4 border-piedra-400 bg-piedra-100" /> Cancelado</span>
-          {puedeEditar() && <span className="ml-auto hidden sm:inline">Doble clic en un día para agregar un evento</span>}
         </div>
       </Tarjeta>
 
@@ -277,7 +233,7 @@ export default function Eventos() {
               </Selector>
             </Campo>
             <Campo etiqueta="Descripción"><AreaTexto value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} /></Campo>
-            {errorForm && <p className="text-sm text-liston-600">{errorForm}</p>}
+            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
           </>
         )}
       </Modal>

@@ -107,14 +107,15 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // El menú es como el de un juego: la sección actual va en un recuadro dorado
-  // con un cursor ▶ que parpadea a su izquierda.
+  // El menú es el índice: todo el contenido deja libre un margen a la izquierda
+  // por donde cuelga el listón, desde el borde superior hasta la sección actual.
+  // El listón vive dentro del enlace activo y el desplazamiento del menú lo recorta.
   const barra = (
-    <nav className="flex h-full flex-col overflow-y-auto border-r-[3px] border-piedra-900 bg-piedra-100">
+    <nav className="flex h-full flex-col overflow-y-auto border-r border-piedra-200 bg-white">
       <div className="pb-6 pl-10 pr-4 pt-6">
         <div className="flex items-center gap-3">
           <Logo url={db.configuracion.logoUrl} tamano={32} />
-          <p className="line-clamp-2 font-titulo text-lg font-semibold leading-tight text-piedra-900">{db.configuracion.nombre}</p>
+          <p className="line-clamp-2 font-titulo text-lg font-medium leading-tight text-piedra-900">{db.configuracion.nombre}</p>
         </div>
         {usuario.rol === "administrador" ? (
           <label className="relative mt-4 flex items-center">
@@ -139,25 +140,23 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
           if (delGrupo.length === 0) return null;
           return (
             <div key={grupo}>
-              <p className="mb-1 pl-10 pr-4 font-titulo text-[13px] uppercase tracking-wider text-piedra-500">{grupo}</p>
+              <p className="mb-1 pl-10 pr-4 font-titulo text-[15px] italic text-piedra-500">{grupo}</p>
               <ul className="space-y-0.5">
                 {delGrupo.map((e) => {
                   const activo = e === actual;
                   return (
                     <li key={e.href} className="relative">
                       {activo && (
-                        <span aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 animate-cursor font-titulo text-sm text-liston-600">▶</span>
+                        <span aria-hidden className="liston absolute -bottom-1.5 left-4 h-[300vh] w-2.5 animate-caer bg-liston-600" />
                       )}
                       <Link
                         href={e.href}
                         aria-current={activo ? "page" : undefined}
-                        className={`group ml-7 mr-3 flex items-center gap-3 border-2 px-3 py-2 text-[15px] transition-[background-color,color,border-color,box-shadow,transform] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dorado-400 ${
-                          activo
-                            ? "border-piedra-900 bg-dorado-300 font-bold text-piedra-950 shadow-[3px_3px_0_0_var(--color-piedra-900)]"
-                            : "border-transparent text-piedra-700 hover:translate-x-1 hover:bg-piedra-200/70 hover:text-piedra-950"
+                        className={`ml-7 mr-3 flex items-center gap-3 rounded-md px-3 py-2 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500 ${
+                          activo ? "bg-marca-50 font-semibold text-marca-900" : "text-piedra-700 hover:bg-piedra-100 hover:text-piedra-900"
                         }`}
                       >
-                        <span className={`transition-colors duration-200 ${activo ? "text-piedra-950" : "text-piedra-500 group-hover:text-piedra-900"}`}>{e.icono}</span>
+                        <span className={activo ? "text-marca-700" : "text-piedra-400"}>{e.icono}</span>
                         {e.texto}
                       </Link>
                     </li>
@@ -169,8 +168,8 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
         })}
       </div>
 
-      <div className="flex items-center gap-3 border-t-2 border-piedra-300 py-3 pl-10 pr-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center border-2 border-piedra-900 bg-marca-700 font-titulo text-xs text-white">
+      <div className="flex items-center gap-3 border-t border-piedra-200 py-3 pl-10 pr-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-marca-100 text-xs font-bold text-marca-800">
           {iniciales(usuario.nombre)}
         </span>
         <div className="min-w-0 flex-1 leading-tight">
@@ -181,7 +180,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
           onClick={salir}
           title="Cerrar sesión"
           aria-label="Cerrar sesión"
-          className="p-2 text-piedra-500 transition hover:bg-liston-100 hover:text-liston-700"
+          className="rounded-md p-2 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-800"
         >
           <LogOut size={16} />
         </button>
@@ -194,22 +193,22 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
       <aside className="fixed inset-y-0 hidden w-64 lg:block print:hidden">{barra}</aside>
       {menuAbierto && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMenuAbierto(false)}>
-          <div className="absolute inset-0 animate-aparecer bg-marca-950/60" />
+          <div className="absolute inset-0 animate-aparecer bg-piedra-950/45" />
           <aside className="absolute inset-y-0 w-72 animate-deslizar shadow-2xl" onClick={(e) => e.stopPropagation()}>{barra}</aside>
         </div>
       )}
       <div className="min-w-0 flex-1 lg:pl-64 print:pl-0">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b-[3px] border-piedra-900 bg-marca-900 px-4 py-2.5 text-white lg:hidden print:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-piedra-200 bg-white/90 px-4 py-2.5 backdrop-blur lg:hidden print:hidden">
           <button
-            className="p-1.5 text-marca-100 hover:bg-marca-700"
+            className="rounded-md p-1.5 text-piedra-600 hover:bg-piedra-100"
             onClick={() => setMenuAbierto(true)}
             aria-label="Abrir menú"
           >
             <Menu size={20} />
           </button>
-          <p className="min-w-0 truncate font-titulo text-lg font-medium">{db.configuracion.nombre}</p>
+          <p className="min-w-0 truncate font-titulo text-lg font-medium text-piedra-900">{db.configuracion.nombre}</p>
         </header>
-        <main key={ruta} className="escalonado mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+        <main className="mx-auto max-w-7xl animate-aparecer px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
           {children}
         </main>
       </div>
@@ -221,7 +220,7 @@ function Aviso({ titulo, salir, children }: { titulo: string; salir: () => void;
   return (
     <div className="flex min-h-screen items-center justify-center bg-papel p-4">
       <Tarjeta className="max-w-md p-8 text-center">
-        <p className="font-titulo text-2xl font-semibold text-piedra-900">{titulo}</p>
+        <p className="font-titulo text-2xl font-medium text-piedra-900">{titulo}</p>
         <p className="mt-2 text-piedra-600">{children}</p>
         <Boton variante="secundario" className="mt-6" onClick={salir}>
           <LogOut size={14} /> Cerrar sesión
