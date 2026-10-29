@@ -34,6 +34,7 @@ interface Contexto {
   entrar: (correo: string, contrasena: string) => Promise<string | null>;
   entrarDemo: (usuarioId: string) => void;
   recuperar: (correo: string) => Promise<string | null>;
+  registrar: (nombre: string, correo: string, contrasena: string) => Promise<{ error?: string; sesion?: boolean }>;
   cerrarSesion: () => Promise<void>;
   recargar: () => Promise<void>;
   sedeId: string;
@@ -216,6 +217,23 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
           redirectTo: `${window.location.origin}/restablecer`,
         });
         return error ? "No se pudo enviar el correo. Intenta de nuevo en unos minutos." : null;
+      },
+      // La cuenta nace inactiva y sin sede (trigger crear_perfil): no ve nada
+      // hasta que un administrador le asigna rol y sede en Usuarios.
+      registrar: async (nombre, correo, contrasena) => {
+        if (modoDemo) return { error: "En la demostración no se crean cuentas." };
+        const { data, error } = await supabaseNavegador().auth.signUp({
+          email: correo.trim(),
+          password: contrasena,
+          options: { data: { nombre: nombre.trim() }, emailRedirectTo: `${window.location.origin}/login` },
+        });
+        if (error) {
+          if (/disabled|not allowed/i.test(error.message)) return { error: "Por ahora las cuentas solo se crean por invitación del administrador." };
+          if (/password/i.test(error.message)) return { error: "La contraseña no es válida. Usa al menos 8 caracteres." };
+          return { error: "No se pudo crear la cuenta. Intenta de nuevo en unos minutos." };
+        }
+        if (data.session) await recargar();
+        return { sesion: !!data.session };
       },
       cerrarSesion: async () => {
         if (!modoDemo) await supabaseNavegador().auth.signOut();
