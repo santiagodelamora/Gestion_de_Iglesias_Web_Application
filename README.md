@@ -1,4 +1,4 @@
-# Gestión de Iglesias
+# Comunidad de Fe
 Aplicación web para administrar una iglesia con varias sedes: miembros, asistencia, eventos, ministerios, donaciones, comunicados, panel de indicadores, reportes y configuración. Proyecto académico.
 
 ## Estado
