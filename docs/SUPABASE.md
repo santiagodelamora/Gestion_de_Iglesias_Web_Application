@@ -24,22 +24,24 @@ Esta guía conecta la aplicación a una base de datos real. Toma unos 15 minutos
 
 **¿Ya tenías una fase anterior instalada?** Ejecuta solo los archivos de las fases nuevas (esquema y, si usas los datos de ejemplo, su `seed_faseN.sql`). No vuelvas a ejecutar los anteriores: fallarían porque las tablas ya existen.
 
-## 3. Cerrar el registro público
+## 3. Cerrar el registro público (por ahora)
 
-Las cuentas solo se crean por invitación desde la aplicación, así nadie puede registrarse por su cuenta.
+Mientras no exista el administrador, nadie más debe poder registrarse: la primera cuenta del sistema queda como administrador.
 
 1. Ve a **Authentication → Sign In / Providers**.
 2. Desactiva **Allow new users to sign up** y guarda.
 
-Aunque alguien lograra crear una cuenta, la base de datos la deja inactiva y sin acceso a nada hasta que un administrador le asigne rol y sede.
+Con el registro cerrado, las cuentas solo se crean por invitación desde **Usuarios**.
+
+**Para usar el botón "Crear cuenta" del inicio de sesión**, vuelve a activar **Allow new users to sign up** después de crear el administrador (paso 5) y deja encendido **Confirm email**. Cada cuenta creada así nace como Miembro, **inactiva y sin sede**: no ve nada hasta que un administrador, en **Usuarios**, le asigna rol y sede y la activa. El riesgo es que cualquiera puede llenar la lista de pendientes con cuentas falsas; el correo gratuito de Supabase además envía pocos correos por hora.
 
 ## 4. Direcciones de la aplicación
 
 1. Ve a **Authentication → URL Configuration**.
 2. En **Site URL** escribe `http://localhost:3000` (cámbialo por la dirección de Vercel cuando publiques la app).
-3. En **Redirect URLs** agrega `http://localhost:3000/restablecer` (y después `https://tu-app.vercel.app/restablecer`).
+3. En **Redirect URLs** agrega `http://localhost:3000/restablecer` y `http://localhost:3000/login` (y después las mismas con `https://tu-app.vercel.app`).
 
-Estas direcciones son a donde llevan los correos de invitación y de recuperación de contraseña.
+`/restablecer` es a donde llevan los correos de invitación y de recuperación de contraseña; `/login`, el de confirmación de las cuentas creadas con "Crear cuenta".
 
 ## 5. Crear el primer administrador
 
