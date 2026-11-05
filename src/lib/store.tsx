@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { isAuthRetryableFetchError, type AuthError } from "@supabase/supabase-js";
 import { generarDatos, iso, type BaseDatos } from "./datos-ejemplo";
 import { repositorioDemo } from "./repositorio/demo";
 import { aUsuario, repositorioSupabase } from "./repositorio/supabase";
@@ -56,6 +57,33 @@ const BASE_VACIA: BaseDatos = {
   aportaciones: [],
   anuncios: [],
   horarios: [],
+};
+
+// Traduce el error de signUp a un mensaje para la persona. Se revisa primero el
+// código de Supabase y, si no viene, el texto del mensaje.
+const mensajeErrorRegistro = (error: AuthError) => {
+  // Sin respuesta del servidor: sin internet, URL mal escrita o proyecto pausado
+  if (isAuthRetryableFetchError(error)) {
+    return "No se pudo conectar con el servidor. Revisa tu conexión o avisa al administrador.";
+  }
+  const codigo = error.code ?? "";
+  if (["signup_disabled", "email_provider_disabled"].includes(codigo) || /disabled|not allowed/i.test(error.message)) {
+    return "Por ahora las cuentas solo se crean por invitación del administrador.";
+  }
+  if (["user_already_exists", "email_exists"].includes(codigo)) {
+    return "Ya existe una cuenta con ese correo. Inicia sesión o recupera tu contraseña.";
+  }
+  if (codigo === "email_address_invalid") return "El correo no es válido. Revisa que esté bien escrito.";
+  if (["over_email_send_rate_limit", "over_request_rate_limit"].includes(codigo)) {
+    return "Se alcanzó el límite de correos por hora. Intenta de nuevo más tarde.";
+  }
+  if (codigo === "email_address_not_authorized") {
+    return "El servidor no puede enviar el correo de confirmación a esa dirección. Avisa al administrador.";
+  }
+  if (codigo === "weak_password" || /password/i.test(error.message)) {
+    return "La contraseña no es válida. Usa al menos 8 caracteres.";
+  }
+  return "No se pudo crear la cuenta. Intenta de nuevo en unos minutos.";
 };
 
 const leerSesionGuardada = () => {
@@ -228,9 +256,9 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
           options: { data: { nombre: nombre.trim() }, emailRedirectTo: `${window.location.origin}/login` },
         });
         if (error) {
-          if (/disabled|not allowed/i.test(error.message)) return { error: "Por ahora las cuentas solo se crean por invitación del administrador." };
-          if (/password/i.test(error.message)) return { error: "La contraseña no es válida. Usa al menos 8 caracteres." };
-          return { error: "No se pudo crear la cuenta. Intenta de nuevo en unos minutos." };
+          // El detalle original queda en la consola para diagnosticar
+          console.error("Error al crear la cuenta:", error);
+          return { error: mensajeErrorRegistro(error) };
         }
         if (data.session) await recargar();
         return { sesion: !!data.session };
