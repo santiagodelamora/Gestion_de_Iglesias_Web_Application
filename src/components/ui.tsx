@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, Inbox, Lock, X } from "lucide-react";
+import { Eye, EyeOff, Inbox, LoaderCircle, Lock, X } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 
 // Componentes básicos de interfaz compartidos por todos los módulos.
@@ -19,20 +19,31 @@ const VARIANTES: Record<Variante, string> = {
   fantasma: "text-piedra-600 hover:bg-piedra-100 hover:text-piedra-900",
 };
 
+// cargando: muestra un spinner antes del texto y desactiva el botón mientras dura la operación
 export function Boton({
   variante = "primario",
+  cargando = false,
   className,
+  disabled,
+  children,
   ...p
-}: ComponentProps<"button"> & { variante?: Variante }) {
+}: ComponentProps<"button"> & { variante?: Variante; cargando?: boolean }) {
   return (
     <button
       className={unir(
         "inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        cargando && "disabled:cursor-wait",
         VARIANTES[variante],
         className
       )}
+      disabled={disabled || cargando}
+      aria-busy={cargando || undefined}
       {...p}
-    />
+    >
+      {/* Con movimiento reducido el spinner queda fijo; el texto del botón indica la espera */}
+      {cargando && <LoaderCircle aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" />}
+      {children}
+    </button>
   );
 }
 

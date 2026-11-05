@@ -42,8 +42,10 @@ export default function Login() {
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     setEnviando(true);
-    setError((await entrar(correo, contrasena)) ?? "");
-    setEnviando(false);
+    const fallo = await entrar(correo, contrasena);
+    setError(fallo ?? "");
+    // Si entra, el spinner sigue hasta que el efecto de arriba cambia de página
+    if (fallo) setEnviando(false);
   };
 
   const pedirEnlace = async () => {
@@ -63,10 +65,14 @@ export default function Login() {
     if (contrasena !== confirmacion) return setError("Las contraseñas no coinciden.");
     setEnviando(true);
     const resultado = await registrar(nombre, correo, contrasena);
-    setEnviando(false);
-    if (resultado.error) return setError(resultado.error);
+    if (resultado.error) {
+      setEnviando(false);
+      return setError(resultado.error);
+    }
     // Con sesión abierta, el efecto de arriba lleva al aviso de cuenta pendiente
+    // y el spinner sigue hasta entonces
     if (!resultado.sesion) {
+      setEnviando(false);
       setError("");
       setEnviado(true);
     }
@@ -104,7 +110,7 @@ export default function Login() {
               </Campo>
             </div>
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-            <Boton type="submit" className="w-full py-2.5" disabled={enviando}>{enviando ? "Creando cuenta…" : "Crear cuenta"}</Boton>
+            <Boton type="submit" className="w-full py-2.5" cargando={enviando}>{enviando ? "Creando cuenta…" : "Crear cuenta"}</Boton>
             <p className="text-center text-sm text-piedra-600">
               ¿Ya tienes cuenta?{" "}
               <button type="button" onClick={() => irA("entrar")} className="font-semibold text-marca-700 hover:underline">Inicia sesión</button>
@@ -120,7 +126,7 @@ export default function Login() {
             <EntradaContrasena autoComplete="current-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
           </Campo>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <Boton type="submit" className="w-full py-2.5" disabled={enviando}>{enviando ? "Entrando…" : "Iniciar sesión"}</Boton>
+          <Boton type="submit" className="w-full py-2.5" cargando={enviando}>{enviando ? "Entrando…" : "Iniciar sesión"}</Boton>
           <button type="button" onClick={() => irA("recuperar")} className="w-full text-center text-sm font-semibold text-marca-700 hover:underline">
             ¿Olvidaste tu contraseña?
           </button>
