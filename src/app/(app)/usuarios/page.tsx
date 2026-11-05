@@ -4,7 +4,8 @@ import { Pencil, Plus } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
-import { nombreRol, ROLES } from "@/lib/catalogos";
+import { ROLES } from "@/lib/catalogos";
+import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosInvitacion } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
@@ -21,11 +22,13 @@ export default function Usuarios() {
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
   const { confirmar } = useConfirmacion();
+  const { t } = useIdioma();
+  const tu = t.usuarios;
 
   const permiso = acceso(usuario!.rol, "usuarios");
   if (!permiso) return <SinAcceso />;
   const puedeEditar = permiso === "total";
-  const nombreSede = (id: string | null) => db.sedes.find((s) => s.id === id)?.nombre ?? "Sin sede";
+  const nombreSede = (id: string | null) => db.sedes.find((s) => s.id === id)?.nombre ?? tu.sinSede;
 
   const ejecutar = async (accion: () => Promise<unknown>, alTerminar: () => void) => {
     setGuardando(true);
@@ -37,11 +40,11 @@ export default function Usuarios() {
   };
 
   const invitar = () => {
-    if (!nuevo?.nombre.trim() || !nuevo.correo.trim()) return setErrorForm("Nombre y correo son obligatorios.");
+    if (!nuevo?.nombre.trim() || !nuevo.correo.trim()) return setErrorForm(tu.obligatorios);
     const correo = nuevo.correo;
     ejecutar(() => repo.usuarios.invitar(nuevo), () => {
       setNuevo(null);
-      setAviso(modo === "demo" ? "Usuario creado (demostración)." : `Se envió la invitación a ${correo}.`);
+      setAviso(modo === "demo" ? tu.creadoDemo : tu.invitacionEnviada(correo));
     });
   };
 
@@ -54,9 +57,9 @@ export default function Usuarios() {
       estabaActiva &&
       !activo &&
       !(await confirmar({
-        titulo: "Bloquear acceso",
-        mensaje: <><b>{editando.nombre}</b> no podrá iniciar sesión hasta que vuelvas a marcar su cuenta como activa.</>,
-        accion: "Bloquear acceso",
+        titulo: tu.confirmarTitulo,
+        mensaje: tu.confirmarMensaje(editando.nombre),
+        accion: tu.bloquear,
       }))
     )
       return;
@@ -66,12 +69,12 @@ export default function Usuarios() {
   return (
     <>
       <Encabezado
-        titulo="Usuarios del sistema"
-        descripcion="Cuentas de acceso, su rol y su sede"
+        titulo={tu.titulo}
+        descripcion={tu.descripcion}
         acciones={
           puedeEditar && (
             <Boton onClick={() => { setErrorForm(""); setNuevo({ nombre: "", correo: "", rol: "secretario", sedeId }); }}>
-              <Plus size={16} /> Invitar usuario
+              <Plus size={16} /> {tu.invitar}
             </Boton>
           )
         }
@@ -81,20 +84,20 @@ export default function Usuarios() {
       <Tarjeta>
         <Tabla>
           <thead>
-            <tr><th className={th}>Nombre</th><th className={th}>Correo</th><th className={th}>Rol</th><th className={th}>Sede</th><th className={th}>Estado</th>{puedeEditar && <th className={th}></th>}</tr>
+            <tr><th className={th}>{t.comun.nombre}</th><th className={th}>{t.comun.correo}</th><th className={th}>{tu.rol}</th><th className={th}>{t.comun.sede}</th><th className={th}>{t.comun.estado}</th>{puedeEditar && <th className={th}></th>}</tr>
           </thead>
           <tbody>
             {usuarios.map((u) => (
               <tr key={u.id}>
                 <td className={`${td} font-medium text-piedra-900`}>{u.nombre}</td>
                 <td className={td}>{u.correo}</td>
-                <td className={td}><Etiqueta tono="marca">{nombreRol(u.rol)}</Etiqueta></td>
-                <td className={td}>{u.rol === "administrador" ? "Todas" : nombreSede(u.sedeId)}</td>
-                <td className={td}>{u.activo ? <Etiqueta tono="verde">Activo</Etiqueta> : <Etiqueta tono="ambar">Pendiente o bloqueado</Etiqueta>}</td>
+                <td className={td}><Etiqueta tono="marca">{t.catalogos.roles[u.rol]}</Etiqueta></td>
+                <td className={td}>{u.rol === "administrador" ? tu.todas : nombreSede(u.sedeId)}</td>
+                <td className={td}>{u.activo ? <Etiqueta tono="verde">{t.comun.activo}</Etiqueta> : <Etiqueta tono="ambar">{tu.pendiente}</Etiqueta>}</td>
                 {puedeEditar && (
                   <td className={`${td} text-right`}>
                     {u.id !== usuario!.id && (
-                      <Boton variante="fantasma" aria-label={`Editar a ${u.nombre}`} title="Editar" onClick={() => { setErrorForm(""); setEditando({ ...u, sedeId: u.sedeId ?? db.sedes[0]?.id ?? null }); }}><Pencil size={15} /></Boton>
+                      <Boton variante="fantasma" aria-label={tu.editarA(u.nombre)} title={t.comun.editar} onClick={() => { setErrorForm(""); setEditando({ ...u, sedeId: u.sedeId ?? db.sedes[0]?.id ?? null }); }}><Pencil size={15} /></Boton>
                     )}
                   </td>
                 )}
@@ -102,32 +105,32 @@ export default function Usuarios() {
             ))}
           </tbody>
         </Tabla>
-        {cargando && <Vacio>Cargando…</Vacio>}
+        {cargando && <Vacio>{t.comun.cargando}</Vacio>}
       </Tarjeta>
 
       <Modal
-        titulo="Invitar usuario"
+        titulo={tu.invitar}
         abierto={!!nuevo}
         alCerrar={() => setNuevo(null)}
-        pie={<><Boton variante="secundario" onClick={() => setNuevo(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={invitar}>Enviar invitación</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setNuevo(null)}>{t.comun.cancelar}</Boton><Boton cargando={guardando} onClick={invitar}>{tu.enviarInvitacion}</Boton></>}
       >
         {nuevo && (
           <>
-            <Campo etiqueta="Nombre"><Entrada value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} /></Campo>
-            <Campo etiqueta="Correo"><Entrada type="email" value={nuevo.correo} onChange={(e) => setNuevo({ ...nuevo, correo: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.nombre}><Entrada value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.correo}><Entrada type="email" value={nuevo.correo} onChange={(e) => setNuevo({ ...nuevo, correo: e.target.value })} /></Campo>
             <SelectoresRolSede rol={nuevo.rol} sedeId={nuevo.sedeId} alCambiar={(rol, s) => setNuevo({ ...nuevo, rol, sedeId: s, miembroId: s === nuevo.sedeId ? nuevo.miembroId : undefined })} />
             <VinculoMiembro sedeId={nuevo.sedeId} miembroId={nuevo.miembroId} alCambiar={(miembroId) => setNuevo({ ...nuevo, miembroId })} />
-            <p className="text-xs text-piedra-500">La persona recibirá un correo con un enlace para crear su contraseña.</p>
+            <p className="text-xs text-piedra-500">{tu.avisoInvitacion}</p>
             {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
           </>
         )}
       </Modal>
 
       <Modal
-        titulo={`Editar ${editando?.nombre ?? ""}`}
+        titulo={tu.editarTitulo(editando?.nombre ?? "")}
         abierto={!!editando}
         alCerrar={() => setEditando(null)}
-        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardarEdicion}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>{t.comun.cancelar}</Boton><Boton cargando={guardando} onClick={guardarEdicion}>{t.comun.guardar}</Boton></>}
       >
         {editando && (
           <>
@@ -135,7 +138,7 @@ export default function Usuarios() {
             <VinculoMiembro sedeId={editando.sedeId ?? ""} miembroId={editando.miembroId} alCambiar={(miembroId) => setEditando({ ...editando, miembroId })} />
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={editando.activo} onChange={(e) => setEditando({ ...editando, activo: e.target.checked })} />
-              Cuenta activa (desmarca para bloquear el acceso)
+              {tu.cuentaActiva}
             </label>
             {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
           </>
@@ -147,14 +150,15 @@ export default function Usuarios() {
 
 function SelectoresRolSede({ rol, sedeId, alCambiar }: { rol: Rol; sedeId: string; alCambiar: (rol: Rol, sedeId: string) => void }) {
   const { db } = useDatos();
+  const { t } = useIdioma();
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <Campo etiqueta="Rol">
+      <Campo etiqueta={t.usuarios.rol}>
         <Selector value={rol} onChange={(e) => alCambiar(e.target.value as Rol, sedeId)}>
-          {ROLES.map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+          {ROLES.map((r) => <option key={r} value={r}>{t.catalogos.roles[r]}</option>)}
         </Selector>
       </Campo>
-      <Campo etiqueta="Sede">
+      <Campo etiqueta={t.comun.sede}>
         <Selector value={sedeId} onChange={(e) => alCambiar(rol, e.target.value)}>
           {db.sedes.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </Selector>
@@ -169,10 +173,11 @@ function VinculoMiembro({ sedeId, miembroId, alCambiar }: { sedeId: string; miem
   const { repo } = useDatos();
   const cargar = useCallback(() => (sedeId ? repo.miembros.listar(sedeId) : Promise.resolve([])), [repo, sedeId]);
   const { datos: miembros } = useCarga<Miembro[]>(cargar, []);
+  const { t } = useIdioma();
   return (
-    <Campo etiqueta="Registro de miembro vinculado">
+    <Campo etiqueta={t.usuarios.miembroVinculado}>
       <Selector value={miembroId ?? ""} onChange={(e) => alCambiar(e.target.value || undefined)}>
-        <option value="">Ninguno</option>
+        <option value="">{t.comun.ninguno}</option>
         {miembros.filter((m) => m.activo || m.id === miembroId).map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
       </Selector>
     </Campo>

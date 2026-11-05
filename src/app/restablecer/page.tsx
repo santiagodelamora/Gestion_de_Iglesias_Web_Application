@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PantallaAcceso } from "@/components/pantalla-acceso";
 import { Boton, Campo, EntradaContrasena } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
 import { useDatos } from "@/lib/store";
 import { supabaseNavegador } from "@/lib/supabase/cliente";
 
@@ -17,6 +18,7 @@ export default function Restablecer() {
   const [confirmacion, setConfirmacion] = useState("");
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const { t } = useIdioma();
 
   useEffect(() => {
     if (modo === "demo") return;
@@ -39,12 +41,12 @@ export default function Restablecer() {
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (contrasena.length < 8) return setError("La contraseña debe tener al menos 8 caracteres.");
-    if (contrasena !== confirmacion) return setError("Las contraseñas no coinciden.");
+    if (contrasena.length < 8) return setError(t.login.contrasenaCorta);
+    if (contrasena !== confirmacion) return setError(t.login.noCoinciden);
     setGuardando(true);
     const { error: fallo } = await supabaseNavegador().auth.updateUser({ password: contrasena });
     setGuardando(false);
-    if (fallo) return setError("No se pudo guardar la contraseña. Pide un enlace nuevo.");
+    if (fallo) return setError(t.restablecer.noSeGuardo);
     await recargar();
     router.replace("/");
   };
@@ -53,24 +55,24 @@ export default function Restablecer() {
     <PantallaAcceso
       nombre={db.configuracion.nombre}
       logoUrl={db.configuracion.logoUrl}
-      titulo="Define tu contraseña"
-      subtitulo="Usa al menos 8 caracteres."
+      titulo={t.restablecer.titulo}
+      subtitulo={t.restablecer.subtitulo}
     >
       {modo === "demo" ? (
-        <p className="text-sm text-piedra-600">Esta página se usa con Supabase configurado.</p>
+        <p className="text-sm text-piedra-600">{t.restablecer.soloSupabase}</p>
       ) : !listo ? (
-        <p className="text-sm text-piedra-600">Validando el enlace… Si no avanza, el enlace pudo haber expirado: solicita uno nuevo desde la pantalla de inicio de sesión.</p>
+        <p className="text-sm text-piedra-600">{t.restablecer.validando}</p>
       ) : (
         <form onSubmit={guardar} className="space-y-4">
           {/* Mismo campo con botón de ojo que en el inicio de sesión y el registro */}
-          <Campo etiqueta="Nueva contraseña">
+          <Campo etiqueta={t.restablecer.nuevaContrasena}>
             <EntradaContrasena autoComplete="new-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
           </Campo>
-          <Campo etiqueta="Confirmar contraseña">
+          <Campo etiqueta={t.login.confirmarContrasena}>
             <EntradaContrasena autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
           </Campo>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <Boton type="submit" className="w-full py-2.5" cargando={guardando}>{guardando ? "Guardando…" : "Guardar y entrar"}</Boton>
+          <Boton type="submit" className="w-full py-2.5" cargando={guardando}>{guardando ? t.comun.guardando : t.restablecer.guardarYEntrar}</Boton>
         </form>
       )}
     </PantallaAcceso>

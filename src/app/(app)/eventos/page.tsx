@@ -6,13 +6,12 @@ import { useConfirmacion } from "@/components/confirmacion";
 import { AreaTexto, Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tarjeta } from "@/components/ui";
 import { TIPOS_EVENTO } from "@/lib/catalogos";
 import { iso } from "@/lib/datos-ejemplo";
-import { aFecha, fechaLarga, MESES } from "@/lib/formato";
+import { aFecha, fechaLarga } from "@/lib/formato";
+import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
 import type { Evento, Miembro, Ministerio, TipoEvento } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
-
-const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 type Form = Omit<Evento, "id" | "sedeId" | "cancelado">;
 
@@ -42,6 +41,8 @@ export default function Eventos() {
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const { confirmar, notificar } = useConfirmacion();
+  const { t } = useIdioma();
+  const te = t.eventos;
 
   const permiso = acceso(usuario!.rol, "eventos");
   const idsMios = new Set(misMinisterios.map((m) => m.id));
@@ -76,7 +77,7 @@ export default function Eventos() {
       tipo: permiso === "ministerio" ? "Reunión de ministerio" : "Culto dominical",
       fecha,
       hora: "10:00",
-      lugar: "Templo principal",
+      lugar: te.lugarPredeterminado,
       descripcion: "",
       responsables: [],
       ministerioId: permiso === "ministerio" ? misMinisterios[0]?.id : undefined,
@@ -92,8 +93,8 @@ export default function Eventos() {
 
   const guardar = async () => {
     if (!form) return;
-    if (!form.titulo.trim()) return setErrorForm("El título es obligatorio.");
-    if (!form.fecha || !form.hora) return setErrorForm("Indica la fecha y la hora.");
+    if (!form.titulo.trim()) return setErrorForm(t.comun.tituloObligatorio);
+    if (!form.fecha || !form.hora) return setErrorForm(te.indicaFechaHora);
     setGuardando(true);
     const fallo = await intentar(() => (editandoId ? repo.eventos.editar(editandoId, form) : repo.eventos.crear(sedeId, form)));
     setGuardando(false);
@@ -108,15 +109,10 @@ export default function Eventos() {
     if (
       !e.cancelado &&
       !(await confirmar({
-        titulo: "Cancelar evento",
-        mensaje: (
-          <>
-            ¿Cancelar <b>{e.titulo}</b> del {fechaLarga(e.fecha).toLowerCase()} a las {e.hora}? Se mostrará tachado en el calendario y
-            no se podrá pasar lista. Podrás reactivarlo después.
-          </>
-        ),
-        accion: "Cancelar evento",
-        cancelar: "Mantener evento",
+        titulo: te.cancelar,
+        mensaje: te.confirmarMensaje(e.titulo, fechaLarga(e.fecha), e.hora),
+        accion: te.cancelar,
+        cancelar: te.mantener,
       }))
     )
       return;
@@ -126,7 +122,7 @@ export default function Eventos() {
     setErrorAccion(fallo);
     if (!fallo) {
       setSeleccionado({ ...e, cancelado: !e.cancelado });
-      notificar(e.cancelado ? `Se reactivó «${e.titulo}».` : `Se canceló «${e.titulo}».`);
+      notificar(e.cancelado ? te.reactivado(e.titulo) : te.canceladoAviso(e.titulo));
     }
     recargar();
   };
@@ -138,23 +134,23 @@ export default function Eventos() {
   return (
     <>
       <Encabezado
-        titulo="Eventos"
-        descripcion="Cultos, reuniones y actividades de la sede"
-        acciones={puedeEditar() && <Boton onClick={() => abrirNuevo()}><Plus size={16} /> Nuevo evento</Boton>}
+        titulo={te.titulo}
+        descripcion={te.descripcion}
+        acciones={puedeEditar() && <Boton onClick={() => abrirNuevo()}><Plus size={16} /> {te.nuevo}</Boton>}
       />
       {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
       <Tarjeta>
         <div className="flex items-center justify-between border-b border-piedra-200 p-4">
-          <h2 className="font-titulo text-2xl font-medium capitalize">{MESES[m - 1]} {a}</h2>
+          <h2 className="font-titulo text-2xl font-medium capitalize">{t.fechas.meses[m - 1]} {a}</h2>
           <div className="flex gap-1">
-            <Boton variante="secundario" onClick={() => moverMes(-1)} aria-label="Mes anterior" title="Mes anterior"><ChevronLeft size={16} /></Boton>
-            <Boton variante="secundario" onClick={() => setMes(hoy.slice(0, 7))}>Hoy</Boton>
-            <Boton variante="secundario" onClick={() => moverMes(1)} aria-label="Mes siguiente" title="Mes siguiente"><ChevronRight size={16} /></Boton>
+            <Boton variante="secundario" onClick={() => moverMes(-1)} aria-label={te.mesAnterior} title={te.mesAnterior}><ChevronLeft size={16} /></Boton>
+            <Boton variante="secundario" onClick={() => setMes(hoy.slice(0, 7))}>{te.hoy}</Boton>
+            <Boton variante="secundario" onClick={() => moverMes(1)} aria-label={te.mesSiguiente} title={te.mesSiguiente}><ChevronRight size={16} /></Boton>
           </div>
         </div>
         <div className="grid grid-cols-7 border-b border-piedra-200 text-center text-xs font-semibold text-piedra-500">
           {/* Los domingos en carmín, como en los calendarios impresos */}
-          {DIAS.map((d, i) => <div key={d} className={`py-2 ${i === 0 ? "text-liston-600" : ""}`}>{d}</div>)}
+          {t.fechas.diasCortos.map((d, i) => <div key={d} className={`py-2 ${i === 0 ? "text-liston-600" : ""}`}>{d}</div>)}
         </div>
         <div className="grid grid-cols-7">
           {dias.map((d, i) => {
@@ -197,9 +193,9 @@ export default function Eventos() {
           seleccionado && puedeEditar(seleccionado) && (
             <>
               <Boton variante={seleccionado.cancelado ? "secundario" : "peligro"} cargando={procesando} onClick={() => alternarCancelado(seleccionado)}>
-                {seleccionado.cancelado ? "Reactivar evento" : "Cancelar evento"}
+                {seleccionado.cancelado ? te.reactivar : te.cancelar}
               </Boton>
-              <Boton onClick={() => abrirEdicion(seleccionado)}>Editar</Boton>
+              <Boton onClick={() => abrirEdicion(seleccionado)}>{t.comun.editar}</Boton>
             </>
           )
         }
@@ -207,14 +203,14 @@ export default function Eventos() {
         {seleccionado && (
           <div className="space-y-2 text-sm">
             <div className="flex gap-2">
-              <Etiqueta tono="marca">{seleccionado.tipo}</Etiqueta>
-              {seleccionado.cancelado && <Etiqueta tono="rojo">Cancelado</Etiqueta>}
+              <Etiqueta tono="marca">{t.catalogos.tiposEvento[seleccionado.tipo]}</Etiqueta>
+              {seleccionado.cancelado && <Etiqueta tono="rojo">{te.cancelado}</Etiqueta>}
             </div>
-            <p ><strong>Fecha:</strong> {fechaLarga(seleccionado.fecha)}, {seleccionado.hora}</p>
-            <p><strong>Lugar:</strong> {seleccionado.lugar}</p>
-            {seleccionado.ministerioId && <p><strong>Ministerio:</strong> {ministerios.find((x) => x.id === seleccionado.ministerioId)?.nombre}</p>}
+            <p ><strong>{te.fechaDetalle}</strong> {fechaLarga(seleccionado.fecha)}, {seleccionado.hora}</p>
+            <p><strong>{te.lugarDetalle}</strong> {seleccionado.lugar}</p>
+            {seleccionado.ministerioId && <p><strong>{te.ministerioDetalle}</strong> {ministerios.find((x) => x.id === seleccionado.ministerioId)?.nombre}</p>}
             {usuario!.rol !== "miembro" && (
-              <p><strong>Responsables:</strong> {seleccionado.responsables.map(nombreMiembro).join(", ") || "Sin asignar"}</p>
+              <p><strong>{te.responsablesDetalle}</strong> {seleccionado.responsables.map(nombreMiembro).join(", ") || t.comun.sinAsignar}</p>
             )}
             <p className="text-piedra-600">{seleccionado.descripcion}</p>
           </div>
@@ -222,31 +218,31 @@ export default function Eventos() {
       </Modal>
 
       <Modal
-        titulo={editandoId ? "Editar evento" : "Nuevo evento"}
+        titulo={editandoId ? te.editarTitulo : te.nuevo}
         abierto={!!form}
         alCerrar={() => setForm(null)}
-        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>{t.comun.cancelar}</Boton><Boton cargando={guardando} onClick={guardar}>{t.comun.guardar}</Boton></>}
       >
         {form && (
           <>
-            <Campo etiqueta="Título"><Entrada value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.titulo}><Entrada value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} /></Campo>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Campo etiqueta="Tipo">
+              <Campo etiqueta={te.tipo}>
                 <Selector value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoEvento })}>
-                  {TIPOS_EVENTO.map((t) => <option key={t}>{t}</option>)}
+                  {TIPOS_EVENTO.map((tipo) => <option key={tipo} value={tipo}>{t.catalogos.tiposEvento[tipo]}</option>)}
                 </Selector>
               </Campo>
-              <Campo etiqueta="Ministerio (opcional)">
+              <Campo etiqueta={te.ministerioOpcional}>
                 <Selector value={form.ministerioId ?? ""} onChange={(e) => setForm({ ...form, ministerioId: e.target.value || undefined })}>
-                  {permiso !== "ministerio" && <option value="">Ninguno</option>}
+                  {permiso !== "ministerio" && <option value="">{t.comun.ninguno}</option>}
                   {ministeriosElegibles.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
                 </Selector>
               </Campo>
-              <Campo etiqueta="Fecha"><Entrada type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Campo>
-              <Campo etiqueta="Hora"><Entrada type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} /></Campo>
+              <Campo etiqueta={t.comun.fecha}><Entrada type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Campo>
+              <Campo etiqueta={t.comun.hora}><Entrada type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} /></Campo>
             </div>
-            <Campo etiqueta="Lugar"><Entrada value={form.lugar} onChange={(e) => setForm({ ...form, lugar: e.target.value })} /></Campo>
-            <Campo etiqueta="Responsables (Ctrl o Cmd para elegir varios)">
+            <Campo etiqueta={te.lugar}><Entrada value={form.lugar} onChange={(e) => setForm({ ...form, lugar: e.target.value })} /></Campo>
+            <Campo etiqueta={te.responsables}>
               <Selector
                 multiple
                 className="h-32"
@@ -256,7 +252,7 @@ export default function Eventos() {
                 {miembros.filter((x) => x.activo).map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
               </Selector>
             </Campo>
-            <Campo etiqueta="Descripción"><AreaTexto value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.descripcion}><AreaTexto value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} /></Campo>
             {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
           </>
         )}

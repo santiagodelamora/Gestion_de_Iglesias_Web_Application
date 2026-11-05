@@ -6,6 +6,7 @@ import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { CONCEPTOS, METODOS } from "@/lib/catalogos";
 import { fechaCorta, mesCorto, mxn } from "@/lib/formato";
+import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
 import type { Aportacion, ConceptoAportacion, MetodoPago, Miembro } from "@/lib/types";
@@ -13,6 +14,8 @@ import { intentar, useCarga } from "@/lib/usar-carga";
 
 export default function Donaciones() {
   const { usuario, repo, sedeId, hoy } = useDatos();
+  const { t } = useIdioma();
+  const tdn = t.donaciones;
   const permiso = acceso(usuario!.rol, "donaciones");
   const cargar = useCallback(async () => {
     if (!permiso) return { todas: [], miembros: [] };
@@ -39,25 +42,25 @@ export default function Donaciones() {
   const enPeriodo = useMemo(() => movimientos.filter((a) => !a.anulada), [movimientos]);
 
   const porConcepto = useMemo(() => {
-    const t = new Map<string, number>();
-    enPeriodo.forEach((a) => t.set(a.concepto, (t.get(a.concepto) ?? 0) + a.monto));
-    return [...t.entries()].sort((a, b) => b[1] - a[1]);
+    const totales = new Map<ConceptoAportacion, number>();
+    enPeriodo.forEach((a) => totales.set(a.concepto, (totales.get(a.concepto) ?? 0) + a.monto));
+    return [...totales.entries()].sort((a, b) => b[1] - a[1]);
   }, [enPeriodo]);
 
   // Resumen mensual de los últimos 6 meses
   const resumen = useMemo(() => {
-    const t = new Map<string, { total: number; diezmos: number; ofrendas: number; otros: number; n: number }>();
+    const porMes = new Map<string, { total: number; diezmos: number; ofrendas: number; otros: number; n: number }>();
     aportaciones.forEach((a) => {
       const k = a.fecha.slice(0, 7);
-      const r = t.get(k) ?? { total: 0, diezmos: 0, ofrendas: 0, otros: 0, n: 0 };
+      const r = porMes.get(k) ?? { total: 0, diezmos: 0, ofrendas: 0, otros: 0, n: 0 };
       r.total += a.monto;
       r.n++;
       if (a.concepto === "Diezmo") r.diezmos += a.monto;
       else if (a.concepto === "Ofrenda") r.ofrendas += a.monto;
       else r.otros += a.monto;
-      t.set(k, r);
+      porMes.set(k, r);
     });
-    return [...t.entries()].sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
+    return [...porMes.entries()].sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
   }, [aportaciones]);
 
   if (!permiso) return <SinAcceso />;
@@ -68,8 +71,8 @@ export default function Donaciones() {
   const guardar = async () => {
     if (!form) return;
     const monto = Math.round(Number(form.monto) * 100) / 100;
-    if (!(monto > 0)) return setErrorForm("Escribe un monto mayor a cero.");
-    if (!form.fecha) return setErrorForm("Indica la fecha.");
+    if (!(monto > 0)) return setErrorForm(tdn.montoInvalido);
+    if (!form.fecha) return setErrorForm(tdn.indicaFecha);
     setGuardando(true);
     const fallo = await intentar(() =>
       repo.aportaciones.crear(sedeId, {
@@ -92,14 +95,9 @@ export default function Donaciones() {
     if (
       !a.anulada &&
       !(await confirmar({
-        titulo: "Anular aportación",
-        mensaje: (
-          <>
-            ¿Anular la aportación de <b>{mxn(a.monto)}</b> ({a.concepto}) del {fechaCorta(a.fecha)}? Dejará de sumar en los totales y
-            reportes. Podrás restaurarla después.
-          </>
-        ),
-        accion: "Anular",
+        titulo: tdn.confirmarTitulo,
+        mensaje: tdn.confirmarMensaje(mxn(a.monto), t.catalogos.conceptos[a.concepto], fechaCorta(a.fecha)),
+        accion: tdn.anular,
       }))
     )
       return;
@@ -107,48 +105,48 @@ export default function Donaciones() {
     const fallo = await intentar(() => repo.aportaciones.cambiarAnulada(a.id, !a.anulada));
     setProcesandoId(null);
     setErrorAccion(fallo);
-    if (!fallo) notificar(a.anulada ? "Se restauró la aportación." : "Se anuló la aportación.");
+    if (!fallo) notificar(a.anulada ? tdn.restaurada : tdn.anuladaAviso);
     recargar();
   };
 
   return (
     <>
       <Encabezado
-        titulo="Donaciones y aportaciones"
-        descripcion="Información financiera restringida a administración, pastor y tesorería"
+        titulo={tdn.titulo}
+        descripcion={tdn.descripcion}
         acciones={
           puedeRegistrar && (
             <Boton onClick={() => { setErrorForm(""); setForm({ fecha: hoy, monto: "", concepto: "Diezmo", metodo: "Efectivo", miembroId: "", anonima: false }); }}>
-              <Plus size={16} /> Registrar aportación
+              <Plus size={16} /> {tdn.registrar}
             </Boton>
           )
         }
       />
       {!puedeRegistrar && (
         <p className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          <Lock size={14} /> Tienes acceso de solo lectura.
+          <Lock size={14} /> {tdn.soloLectura}
         </p>
       )}
       {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
 
       <Tarjeta className="mb-4 flex flex-wrap items-end gap-3 p-4">
-        <Campo etiqueta="Desde"><Entrada type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></Campo>
-        <Campo etiqueta="Hasta"><Entrada type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></Campo>
+        <Campo etiqueta={t.comun.desde}><Entrada type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></Campo>
+        <Campo etiqueta={t.comun.hasta}><Entrada type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></Campo>
         <div className="ml-auto text-right">
-          <p className="text-xs text-piedra-500">Total del periodo</p>
+          <p className="text-xs text-piedra-500">{tdn.totalPeriodo}</p>
           <p className="text-2xl font-semibold">{mxn(total)}</p>
-          <p className="text-xs text-piedra-500">{enPeriodo.length} aportaciones</p>
+          <p className="text-xs text-piedra-500">{tdn.aportaciones(enPeriodo.length)}</p>
         </div>
       </Tarjeta>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Tarjeta className="lg:col-span-2">
-          <h2 className="border-b border-piedra-200 p-4 font-semibold">Movimientos del periodo</h2>
+          <h2 className="border-b border-piedra-200 p-4 font-semibold">{tdn.movimientos}</h2>
           <div className="max-h-[520px] overflow-y-auto">
             <Tabla>
               <thead>
                 <tr>
-                  <th className={th}>Fecha</th><th className={th}>Concepto</th><th className={th}>Aportante</th><th className={th}>Método</th><th className={`${th} text-right`}>Monto</th>
+                  <th className={th}>{t.comun.fecha}</th><th className={th}>{tdn.concepto}</th><th className={th}>{tdn.aportante}</th><th className={th}>{tdn.metodo}</th><th className={`${th} text-right`}>{tdn.monto}</th>
                   {puedeRegistrar && <th className={th}></th>}
                 </tr>
               </thead>
@@ -156,9 +154,9 @@ export default function Donaciones() {
                 {movimientos.map((a) => (
                   <tr key={a.id} className={a.anulada ? "text-piedra-400" : ""}>
                     <td className={`${td} whitespace-nowrap`}>{fechaCorta(a.fecha)}</td>
-                    <td className={td}>{a.concepto} {a.anulada && <Etiqueta tono="rojo">Anulada</Etiqueta>}</td>
-                    <td className={td}>{nombre(a.miembroId) ?? <Etiqueta>Anónimo</Etiqueta>}</td>
-                    <td className={td}>{a.metodo}</td>
+                    <td className={td}>{t.catalogos.conceptos[a.concepto]} {a.anulada && <Etiqueta tono="rojo">{tdn.anulada}</Etiqueta>}</td>
+                    <td className={td}>{nombre(a.miembroId) ?? <Etiqueta>{tdn.anonimo}</Etiqueta>}</td>
+                    <td className={td}>{t.catalogos.metodos[a.metodo]}</td>
                     <td className={`${td} text-right font-medium ${a.anulada ? "line-through" : ""}`}>{mxn(a.monto)}</td>
                     {puedeRegistrar && (
                       <td className={`${td} text-right`}>
@@ -167,7 +165,7 @@ export default function Donaciones() {
                           disabled={procesandoId === a.id}
                           onClick={() => alternarAnulada(a)}
                         >
-                          {a.anulada ? "Restaurar" : "Anular"}
+                          {a.anulada ? tdn.restaurar : tdn.anular}
                         </button>
                       </td>
                     )}
@@ -175,17 +173,17 @@ export default function Donaciones() {
                 ))}
               </tbody>
             </Tabla>
-            {cargando ? <Vacio>Cargando…</Vacio> : movimientos.length === 0 && <Vacio>No hay aportaciones en este periodo.</Vacio>}
+            {cargando ? <Vacio>{t.comun.cargando}</Vacio> : movimientos.length === 0 && <Vacio>{tdn.sinAportaciones}</Vacio>}
           </div>
         </Tarjeta>
 
         <div className="space-y-4">
           <Tarjeta className="p-4">
-            <h2 className="mb-3 font-semibold">Por concepto</h2>
+            <h2 className="mb-3 font-semibold">{tdn.porConcepto}</h2>
             <ul className="space-y-2 text-sm">
               {porConcepto.map(([c, monto]) => (
                 <li key={c}>
-                  <div className="flex justify-between"><span>{c}</span><span className="font-medium">{mxn(monto)}</span></div>
+                  <div className="flex justify-between"><span>{t.catalogos.conceptos[c]}</span><span className="font-medium">{mxn(monto)}</span></div>
                   <div className="mt-1 h-1.5 rounded-full bg-piedra-100">
                     <div className="h-1.5 rounded-full bg-marca-500" style={{ width: `${(monto / total) * 100}%` }} />
                   </div>
@@ -194,9 +192,9 @@ export default function Donaciones() {
             </ul>
           </Tarjeta>
           <Tarjeta>
-            <h2 className="border-b border-piedra-200 p-4 font-semibold">Resumen mensual</h2>
+            <h2 className="border-b border-piedra-200 p-4 font-semibold">{tdn.resumen}</h2>
             <Tabla>
-              <thead><tr><th className={th}>Mes</th><th className={`${th} text-right`}>Diezmos</th><th className={`${th} text-right`}>Total</th></tr></thead>
+              <thead><tr><th className={th}>{tdn.mes}</th><th className={`${th} text-right`}>{tdn.diezmos}</th><th className={`${th} text-right`}>{tdn.total}</th></tr></thead>
               <tbody>
                 {resumen.map(([mes, r]) => (
                   <tr key={mes}>
@@ -212,35 +210,35 @@ export default function Donaciones() {
       </div>
 
       <Modal
-        titulo="Registrar aportación"
+        titulo={tdn.registrar}
         abierto={!!form}
         alCerrar={() => setForm(null)}
-        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>{t.comun.cancelar}</Boton><Boton cargando={guardando} onClick={guardar}>{t.comun.guardar}</Boton></>}
       >
         {form && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Campo etiqueta="Fecha"><Entrada type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Campo>
-              <Campo etiqueta="Monto (MXN)"><Entrada type="number" min="1" step="0.01" value={form.monto} onChange={(e) => setForm({ ...form, monto: e.target.value })} /></Campo>
-              <Campo etiqueta="Concepto">
+              <Campo etiqueta={t.comun.fecha}><Entrada type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Campo>
+              <Campo etiqueta={tdn.montoMxn}><Entrada type="number" min="1" step="0.01" value={form.monto} onChange={(e) => setForm({ ...form, monto: e.target.value })} /></Campo>
+              <Campo etiqueta={tdn.concepto}>
                 <Selector value={form.concepto} onChange={(e) => setForm({ ...form, concepto: e.target.value as ConceptoAportacion })}>
-                  {CONCEPTOS.map((c) => <option key={c}>{c}</option>)}
+                  {CONCEPTOS.map((c) => <option key={c} value={c}>{t.catalogos.conceptos[c]}</option>)}
                 </Selector>
               </Campo>
-              <Campo etiqueta="Método de recepción">
+              <Campo etiqueta={tdn.metodoRecepcion}>
                 <Selector value={form.metodo} onChange={(e) => setForm({ ...form, metodo: e.target.value as MetodoPago })}>
-                  {METODOS.map((c) => <option key={c}>{c}</option>)}
+                  {METODOS.map((c) => <option key={c} value={c}>{t.catalogos.metodos[c]}</option>)}
                 </Selector>
               </Campo>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.anonima} onChange={(e) => setForm({ ...form, anonima: e.target.checked })} />
-              Aportación anónima
+              {tdn.anonima}
             </label>
             {!form.anonima && (
-              <Campo etiqueta="Aportante (opcional)">
+              <Campo etiqueta={tdn.aportanteOpcional}>
                 <Selector value={form.miembroId} onChange={(e) => setForm({ ...form, miembroId: e.target.value })}>
-                  <option value="">Sin asociar</option>
+                  <option value="">{tdn.sinAsociar}</option>
                   {miembros.filter((m) => m.activo).map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
                 </Selector>
               </Campo>

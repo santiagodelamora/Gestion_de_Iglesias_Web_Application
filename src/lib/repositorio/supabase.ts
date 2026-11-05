@@ -1,4 +1,5 @@
 import { invitarUsuario } from "@/app/(app)/usuarios/acciones";
+import { idiomaActual, textos } from "../i18n";
 import { supabaseNavegador } from "../supabase/cliente";
 import type { Anuncio, Aportacion, Asistencia, Evento, Horario, Miembro, Ministerio, Usuario } from "../types";
 import type { DatosAnuncio, Repositorio } from "./tipos";
@@ -146,32 +147,31 @@ const aAportacion = (f: FilaAportacion): Aportacion => ({
 const ORDEN_DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 // Traduce los errores de Supabase y PostgreSQL más comunes a un mensaje que diga
-// qué pasó y qué hacer. Los demás dejan el original en la consola.
+// qué pasó y qué hacer, en el idioma activo. Los demás dejan el original en la consola.
 function mensajeError(error: { message: string; code?: string }) {
-  if (/fetch|network|load failed/i.test(error.message)) {
-    return "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
-  }
+  const t = textos().errores;
+  if (/fetch|network|load failed/i.test(error.message)) return t.conexion;
   switch (error.code) {
     case "42501":
-      return "No tienes permiso para realizar esta acción.";
+      return t.sinPermiso;
     case "23505":
-      return "Ya existe un registro con esos datos.";
+      return t.duplicado;
     case "23503":
-      return "No se puede completar porque el registro está ligado a otros datos.";
+      return t.ligado;
     case "23502":
     case "23514":
     case "22P02":
     case "22007":
     case "22008":
-      return "Algún dato no tiene un formato válido. Revisa el formulario e inténtalo de nuevo.";
+      return t.formato;
     case "PGRST301":
-      return "Tu sesión expiró. Vuelve a iniciar sesión.";
+      return t.sesionExpirada;
   }
   console.error(error);
-  return "No se pudo completar la acción. Inténtalo de nuevo en unos minutos.";
+  return t.generico;
 }
 
-// Convierte el error de Supabase en una excepción con mensaje en español
+// Convierte el error de Supabase en una excepción con el mensaje para la persona
 function revisar<T>(r: { data: T; error: { message: string; code?: string } | null }): T {
   if (r.error) throw new Error(mensajeError(r.error));
   return r.data;
@@ -225,7 +225,8 @@ export function repositorioSupabase(): Repositorio {
         return (filas as FilaUsuario[]).map(aUsuario);
       },
       async invitar(datos) {
-        const r = await invitarUsuario(datos);
+        // El servidor no conoce el idioma del navegador: se le envía
+        const r = await invitarUsuario(datos, idiomaActual());
         if (r.error) throw new Error(r.error);
       },
       async editar(id, c) {

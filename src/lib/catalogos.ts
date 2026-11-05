@@ -1,5 +1,8 @@
 import type { ConceptoAportacion, MetodoPago, Rol, TipoEvento } from "./types";
 
+// Valores tal como se guardan en la base de datos. Lo que se muestra de cada uno
+// sale del diccionario del idioma activo (t.catalogos).
+
 export const CONCEPTOS: ConceptoAportacion[] = [
   "Diezmo",
   "Ofrenda",
@@ -28,14 +31,4 @@ export const TIPOS_EVENTO: TipoEvento[] = [
   "Evangelismo",
 ];
 
-export const ROLES: { id: Rol; nombre: string }[] = [
-  { id: "administrador", nombre: "Administrador" },
-  { id: "pastor", nombre: "Pastor" },
-  { id: "secretario", nombre: "Secretario" },
-  { id: "tesorero", nombre: "Tesorero" },
-  { id: "coordinador", nombre: "Coordinador" },
-  { id: "miembro", nombre: "Miembro" },
-];
-
-export const nombreRol = (rol: Rol) =>
-  ROLES.find((r) => r.id === rol)?.nombre ?? rol;
+export const ROLES: Rol[] = ["administrador", "pastor", "secretario", "tesorero", "coordinador", "miembro"];

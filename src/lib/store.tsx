@@ -11,6 +11,7 @@ import {
 } from "react";
 import { isAuthRetryableFetchError, type AuthError } from "@supabase/supabase-js";
 import { generarDatos, iso, type BaseDatos } from "./datos-ejemplo";
+import { textos, useIdioma } from "./i18n";
 import { repositorioDemo } from "./repositorio/demo";
 import { aUsuario, repositorioSupabase } from "./repositorio/supabase";
 import type { Repositorio } from "./repositorio/tipos";
@@ -59,31 +60,22 @@ const BASE_VACIA: BaseDatos = {
   horarios: [],
 };
 
-// Traduce el error de signUp a un mensaje para la persona. Se revisa primero el
-// código de Supabase y, si no viene, el texto del mensaje.
+// Traduce el error de signUp a un mensaje para la persona, en el idioma activo.
+// Se revisa primero el código de Supabase y, si no viene, el texto del mensaje.
 const mensajeErrorRegistro = (error: AuthError) => {
+  const t = textos().auth;
   // Sin respuesta del servidor: sin internet, URL mal escrita o proyecto pausado
-  if (isAuthRetryableFetchError(error)) {
-    return "No se pudo conectar con el servidor. Revisa tu conexión o avisa al administrador.";
-  }
+  if (isAuthRetryableFetchError(error)) return t.sinConexion;
   const codigo = error.code ?? "";
   if (["signup_disabled", "email_provider_disabled"].includes(codigo) || /disabled|not allowed/i.test(error.message)) {
-    return "Por ahora las cuentas solo se crean por invitación del administrador.";
+    return t.soloInvitacion;
   }
-  if (["user_already_exists", "email_exists"].includes(codigo)) {
-    return "Ya existe una cuenta con ese correo. Inicia sesión o recupera tu contraseña.";
-  }
-  if (codigo === "email_address_invalid") return "El correo no es válido. Revisa que esté bien escrito.";
-  if (["over_email_send_rate_limit", "over_request_rate_limit"].includes(codigo)) {
-    return "Se alcanzó el límite de correos por hora. Intenta de nuevo más tarde.";
-  }
-  if (codigo === "email_address_not_authorized") {
-    return "El servidor no puede enviar el correo de confirmación a esa dirección. Avisa al administrador.";
-  }
-  if (codigo === "weak_password" || /password/i.test(error.message)) {
-    return "La contraseña no es válida. Usa al menos 8 caracteres.";
-  }
-  return "No se pudo crear la cuenta. Intenta de nuevo en unos minutos.";
+  if (["user_already_exists", "email_exists"].includes(codigo)) return t.cuentaExiste;
+  if (codigo === "email_address_invalid") return t.correoInvalido;
+  if (["over_email_send_rate_limit", "over_request_rate_limit"].includes(codigo)) return t.limiteCorreos;
+  if (codigo === "email_address_not_authorized") return t.correoNoAutorizado;
+  if (codigo === "weak_password" || /password/i.test(error.message)) return t.contrasenaInvalida;
+  return t.noSeCreo;
 };
 
 const leerSesionGuardada = () => {
@@ -109,6 +101,12 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
   const [usuarioId, setUsuarioId] = useState<string | null>(null);
   const [sedeId, setSedeId] = useState("");
   const [hoy, setHoy] = useState("");
+  const { t } = useIdioma();
+
+  // El atributo lang del documento sigue al idioma elegido (lectores de pantalla y corrector)
+  useEffect(() => {
+    document.documentElement.lang = t.locale;
+  }, [t]);
 
   // dbRef siempre tiene la versión más reciente, para leer justo después de un cambio
   const fijarDb = useCallback((nueva: BaseDatos) => {
@@ -225,7 +223,7 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
       entrar: async (correo, contrasena) => {
         if (modoDemo) {
           const u = db.usuarios.find((x) => x.correo === correo.trim().toLowerCase());
-          if (!u || !contrasena) return "Correo o contraseña incorrectos.";
+          if (!u || !contrasena) return textos().auth.credenciales;
           setUsuarioId(u.id);
           setSedeId(u.sedeId ?? "");
           guardarSesion(u.id, u.sedeId ?? "");
@@ -235,7 +233,7 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
           email: correo.trim(),
           password: contrasena,
         });
-        if (error) return "Correo o contraseña incorrectos.";
+        if (error) return textos().auth.credenciales;
         await recargar();
         return null;
       },
@@ -244,12 +242,12 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
         const { error } = await supabaseNavegador().auth.resetPasswordForEmail(correo.trim(), {
           redirectTo: `${window.location.origin}/restablecer`,
         });
-        return error ? "No se pudo enviar el correo. Intenta de nuevo en unos minutos." : null;
+        return error ? textos().auth.correoNoEnviado : null;
       },
       // La cuenta nace inactiva y sin sede (trigger crear_perfil): no ve nada
       // hasta que un administrador le asigna rol y sede en Usuarios.
       registrar: async (nombre, correo, contrasena) => {
-        if (modoDemo) return { error: "En la demostración no se crean cuentas." };
+        if (modoDemo) return { error: textos().auth.demoSinCuentas };
         const { data, error } = await supabaseNavegador().auth.signUp({
           email: correo.trim(),
           password: contrasena,
@@ -278,7 +276,7 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
   if (!valor) {
     return (
       <div className="flex h-screen items-center justify-center text-sm text-piedra-500">
-        Cargando…
+        {t.comun.cargando}
       </div>
     );
   }

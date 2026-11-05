@@ -22,16 +22,17 @@ import { useEffect, useState } from "react";
 import { ProveedorConfirmacion } from "@/components/confirmacion";
 import { Logo } from "@/components/logo";
 import { Boton, Selector, Tarjeta } from "@/components/ui";
-import { nombreRol } from "@/lib/catalogos";
+import { useIdioma, type Textos } from "@/lib/i18n";
 import { puedeVer, type Modulo } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
 import type { Rol } from "@/lib/types";
 
-type Grupo = "General" | "Congregación" | "Finanzas" | "Administración";
+type Grupo = keyof Textos["menu"]["grupos"];
 
+// El texto de cada enlace sale del diccionario del idioma activo
 interface Enlace {
   href: string;
-  texto: string;
+  texto: keyof Textos["menu"]["enlaces"];
   icono: React.ReactNode;
   grupo: Grupo;
   visible: (rol: Rol) => boolean;
@@ -40,21 +41,21 @@ interface Enlace {
 const porModulo = (m: Modulo) => (rol: Rol) => puedeVer(rol, m);
 
 const ENLACES: Enlace[] = [
-  { href: "/inicio", texto: "Inicio", icono: <Home size={18} />, grupo: "General", visible: (r) => r === "miembro" },
-  { href: "/panel", texto: "Panel principal", icono: <LayoutDashboard size={18} />, grupo: "General", visible: (r) => r !== "miembro" },
-  { href: "/miembros", texto: "Miembros", icono: <Users size={18} />, grupo: "Congregación", visible: (r) => r !== "miembro" && puedeVer(r, "miembros") },
-  { href: "/asistencia", texto: "Asistencia", icono: <ClipboardCheck size={18} />, grupo: "Congregación", visible: porModulo("asistencia") },
-  { href: "/eventos", texto: "Eventos", icono: <CalendarDays size={18} />, grupo: "Congregación", visible: porModulo("eventos") },
-  { href: "/ministerios", texto: "Ministerios", icono: <UsersRound size={18} />, grupo: "Congregación", visible: porModulo("ministerios") },
-  { href: "/comunicados", texto: "Comunicados", icono: <Megaphone size={18} />, grupo: "Congregación", visible: (r) => r !== "miembro" && puedeVer(r, "comunicados") },
-  { href: "/donaciones", texto: "Donaciones", icono: <HandCoins size={18} />, grupo: "Finanzas", visible: porModulo("donaciones") },
-  { href: "/reportes", texto: "Reportes", icono: <BarChart3 size={18} />, grupo: "Finanzas", visible: porModulo("reportes") },
-  { href: "/usuarios", texto: "Usuarios", icono: <UserCog size={18} />, grupo: "Administración", visible: porModulo("usuarios") },
-  { href: "/sedes", texto: "Sedes", icono: <Building2 size={18} />, grupo: "Administración", visible: porModulo("sedes") },
-  { href: "/configuracion", texto: "Configuración", icono: <Settings size={18} />, grupo: "Administración", visible: porModulo("configuracion") },
+  { href: "/inicio", texto: "inicio", icono: <Home size={18} />, grupo: "general", visible: (r) => r === "miembro" },
+  { href: "/panel", texto: "panel", icono: <LayoutDashboard size={18} />, grupo: "general", visible: (r) => r !== "miembro" },
+  { href: "/miembros", texto: "miembros", icono: <Users size={18} />, grupo: "congregacion", visible: (r) => r !== "miembro" && puedeVer(r, "miembros") },
+  { href: "/asistencia", texto: "asistencia", icono: <ClipboardCheck size={18} />, grupo: "congregacion", visible: porModulo("asistencia") },
+  { href: "/eventos", texto: "eventos", icono: <CalendarDays size={18} />, grupo: "congregacion", visible: porModulo("eventos") },
+  { href: "/ministerios", texto: "ministerios", icono: <UsersRound size={18} />, grupo: "congregacion", visible: porModulo("ministerios") },
+  { href: "/comunicados", texto: "comunicados", icono: <Megaphone size={18} />, grupo: "congregacion", visible: (r) => r !== "miembro" && puedeVer(r, "comunicados") },
+  { href: "/donaciones", texto: "donaciones", icono: <HandCoins size={18} />, grupo: "finanzas", visible: porModulo("donaciones") },
+  { href: "/reportes", texto: "reportes", icono: <BarChart3 size={18} />, grupo: "finanzas", visible: porModulo("reportes") },
+  { href: "/usuarios", texto: "usuarios", icono: <UserCog size={18} />, grupo: "administracion", visible: porModulo("usuarios") },
+  { href: "/sedes", texto: "sedes", icono: <Building2 size={18} />, grupo: "administracion", visible: porModulo("sedes") },
+  { href: "/configuracion", texto: "configuracion", icono: <Settings size={18} />, grupo: "administracion", visible: porModulo("configuracion") },
 ];
 
-const GRUPOS: Grupo[] = ["General", "Congregación", "Finanzas", "Administración"];
+const GRUPOS: Grupo[] = ["general", "congregacion", "finanzas", "administracion"];
 
 const iniciales = (nombre: string) =>
   nombre
@@ -69,6 +70,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const ruta = usePathname();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const { t } = useIdioma();
 
   useEffect(() => {
     if (!usuario) router.replace("/login");
@@ -85,8 +87,8 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
   // Cuenta creada pero todavía sin rol asignado por un administrador
   if (!usuario.activo) {
     return (
-      <Aviso titulo="Tu cuenta está pendiente de activación" salir={salir}>
-        Un administrador debe asignarte un rol y una sede antes de que puedas entrar.
+      <Aviso titulo={t.menu.pendienteTitulo} salir={salir}>
+        {t.menu.pendienteTexto}
       </Aviso>
     );
   }
@@ -97,13 +99,13 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
 
   if (!sede && !(usuario.rol === "administrador" && ruta.startsWith("/sedes"))) {
     return usuario.rol === "administrador" ? (
-      <Aviso titulo="Primero registra una sede" salir={salir}>
-        Todo en el sistema pertenece a una sede.{" "}
-        <Link href="/sedes" className="font-semibold text-marca-700 hover:underline">Crear la primera sede</Link>
+      <Aviso titulo={t.menu.primeraSedeTitulo} salir={salir}>
+        {t.menu.primeraSedeTexto}{" "}
+        <Link href="/sedes" className="font-semibold text-marca-700 hover:underline">{t.menu.crearPrimeraSede}</Link>
       </Aviso>
     ) : (
-      <Aviso titulo="Tu cuenta no tiene sede asignada" salir={salir}>
-        Pide a un administrador que te asigne una sede.
+      <Aviso titulo={t.menu.sinSedeTitulo} salir={salir}>
+        {t.menu.sinSedeTexto}
       </Aviso>
     );
   }
@@ -121,7 +123,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
         {usuario.rol === "administrador" ? (
           <label className="relative mt-4 flex items-center">
             <Building2 size={15} className="pointer-events-none absolute left-3 text-piedra-400" />
-            <span className="sr-only">Sede</span>
+            <span className="sr-only">{t.comun.sede}</span>
             <Selector value={sedeId} onChange={(e) => cambiarSede(e.target.value)} className="py-1.5 pl-9">
               {db.sedes.map((s) => (
                 <option key={s.id} value={s.id}>{s.nombre}</option>
@@ -141,7 +143,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
           if (delGrupo.length === 0) return null;
           return (
             <div key={grupo}>
-              <p className="mb-1 pl-10 pr-4 font-titulo text-[15px] italic text-piedra-500">{grupo}</p>
+              <p className="mb-1 pl-10 pr-4 font-titulo text-[15px] italic text-piedra-500">{t.menu.grupos[grupo]}</p>
               <ul className="space-y-0.5">
                 {delGrupo.map((e) => {
                   const activo = e === actual;
@@ -158,7 +160,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
                         }`}
                       >
                         <span className={activo ? "text-marca-700" : "text-piedra-400"}>{e.icono}</span>
-                        {e.texto}
+                        {t.menu.enlaces[e.texto]}
                       </Link>
                     </li>
                   );
@@ -175,12 +177,12 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
         </span>
         <div className="min-w-0 flex-1 leading-tight">
           <p className="truncate text-sm font-semibold text-piedra-900">{usuario.nombre}</p>
-          <p className="truncate text-xs text-piedra-500">{nombreRol(usuario.rol)}</p>
+          <p className="truncate text-xs text-piedra-500">{t.catalogos.roles[usuario.rol]}</p>
         </div>
         <button
           onClick={salir}
-          title="Cerrar sesión"
-          aria-label="Cerrar sesión"
+          title={t.comun.cerrarSesion}
+          aria-label={t.comun.cerrarSesion}
           className="rounded-md p-2 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-800"
         >
           <LogOut size={16} />
@@ -204,7 +206,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
             <button
               className="rounded-md p-1.5 text-piedra-600 hover:bg-piedra-100"
               onClick={() => setMenuAbierto(true)}
-              aria-label="Abrir menú"
+              aria-label={t.menu.abrirMenu}
             >
               <Menu size={20} />
             </button>
@@ -221,13 +223,14 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
 }
 
 function Aviso({ titulo, salir, children }: { titulo: string; salir: () => void; children: React.ReactNode }) {
+  const { t } = useIdioma();
   return (
     <div className="flex min-h-screen items-center justify-center bg-papel p-4">
       <Tarjeta className="max-w-md p-8 text-center">
         <p className="font-titulo text-2xl font-medium text-piedra-900">{titulo}</p>
         <p className="mt-2 text-piedra-600">{children}</p>
         <Boton variante="secundario" className="mt-6" onClick={salir}>
-          <LogOut size={14} /> Cerrar sesión
+          <LogOut size={14} /> {t.comun.cerrarSesion}
         </Boton>
       </Tarjeta>
     </div>

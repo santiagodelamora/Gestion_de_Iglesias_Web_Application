@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { fechaCorta } from "@/lib/formato";
+import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
 import type { Asistencia as RegistroAsistencia, Evento, Miembro, Ministerio } from "@/lib/types";
@@ -66,6 +67,8 @@ export default function Asistencia() {
   // Hay marcas que todavía no se guardan
   const [sinGuardar, setSinGuardar] = useState(false);
   const { confirmar } = useConfirmacion();
+  const { t } = useIdioma();
+  const ta = t.asistencia;
   if (evento && cargadoPara !== evento.id) {
     const previas = Object.fromEntries(
       asistencias.filter((a) => a.eventoId === evento.id).map((a) => [a.miembroId, a.presente])
@@ -113,10 +116,10 @@ export default function Asistencia() {
     if (
       sinGuardar &&
       !(await confirmar({
-        titulo: "Asistencia sin guardar",
-        mensaje: "Marcaste asistencia que aún no guardas. Si cambias de evento, se perderán esas marcas.",
-        accion: "Descartar y cambiar",
-        cancelar: "Seguir pasando lista",
+        titulo: ta.confirmarTitulo,
+        mensaje: ta.confirmarMensaje,
+        accion: ta.descartar,
+        cancelar: ta.seguir,
       }))
     )
       return;
@@ -141,37 +144,35 @@ export default function Asistencia() {
 
   return (
     <>
-      <Encabezado titulo="Control de asistencia" descripcion="Selecciona el evento y marca a los presentes" />
+      <Encabezado titulo={ta.titulo} descripcion={ta.descripcion} />
       {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <Tarjeta className="lg:col-span-3">
           <div className="grid gap-3 border-b border-piedra-200 p-4 sm:grid-cols-2">
-            <Campo etiqueta="Evento">
+            <Campo etiqueta={ta.evento}>
               <Selector value={evento?.id ?? ""} onChange={(e) => elegirEvento(e.target.value)}>
                 {elegibles.map((e) => (
                   <option key={e.id} value={e.id}>{fechaCorta(e.fecha)} · {e.titulo}</option>
                 ))}
               </Selector>
             </Campo>
-            <Campo etiqueta="Buscar">
+            <Campo etiqueta={ta.buscar}>
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-piedra-400" />
-                <Entrada className="pl-9" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre" />
+                <Entrada className="pl-9" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder={t.comun.nombre} />
               </div>
             </Campo>
           </div>
           {evento ? (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-                <span>
-                  <strong>{presentes}</strong> presentes · <strong>{convocados.length - presentes}</strong> ausentes
-                </span>
+                <span>{ta.conteo(presentes, convocados.length - presentes)}</span>
                 <div className="flex gap-2">
-                  <Boton variante="secundario" onClick={() => marcar(Object.fromEntries(convocados.map((m) => [m.id, true])))}>Todos presentes</Boton>
-                  <Boton cargando={guardando} onClick={guardar}>Guardar asistencia</Boton>
+                  <Boton variante="secundario" onClick={() => marcar(Object.fromEntries(convocados.map((m) => [m.id, true])))}>{ta.todosPresentes}</Boton>
+                  <Boton cargando={guardando} onClick={guardar}>{ta.guardar}</Boton>
                 </div>
               </div>
-              {guardado && <p className="mx-4 mb-3 rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">Asistencia guardada.</p>}
+              {guardado && <p className="mx-4 mb-3 rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{ta.guardada}</p>}
               {errorGuardar && <p className="mx-4 mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorGuardar}</p>}
               <ul className="max-h-[480px] divide-y divide-piedra-100 overflow-y-auto">
                 {visibles.map((m) => (
@@ -183,14 +184,14 @@ export default function Asistencia() {
                         aria-pressed={!!marcas[m.id]}
                         className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold ${marcas[m.id] ? "bg-marca-700 text-white" : "bg-piedra-100 text-piedra-600 hover:bg-piedra-200"}`}
                       >
-                        <Check size={14} /> Presente
+                        <Check size={14} /> {ta.presente}
                       </button>
                       <button
                         onClick={() => marcar({ [m.id]: false })}
                         aria-pressed={!marcas[m.id]}
                         className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold ${!marcas[m.id] ? "bg-piedra-600 text-white" : "bg-piedra-100 text-piedra-600 hover:bg-piedra-200"}`}
                       >
-                        <X size={14} /> Ausente
+                        <X size={14} /> {ta.ausente}
                       </button>
                     </div>
                   </li>
@@ -198,17 +199,17 @@ export default function Asistencia() {
               </ul>
             </>
           ) : cargando ? (
-            <Vacio>Cargando…</Vacio>
+            <Vacio>{t.comun.cargando}</Vacio>
           ) : (
-            <p className="p-6 text-sm text-piedra-500">No hay eventos disponibles para pasar lista.</p>
+            <p className="p-6 text-sm text-piedra-500">{ta.sinEventos}</p>
           )}
         </Tarjeta>
 
         <Tarjeta className="lg:col-span-2">
-          <h2 className="border-b border-piedra-200 p-4 font-semibold">Historial reciente</h2>
+          <h2 className="border-b border-piedra-200 p-4 font-semibold">{ta.historial}</h2>
           <Tabla>
             <thead>
-              <tr><th className={th}>Evento</th><th className={th}>Presentes</th></tr>
+              <tr><th className={th}>{ta.evento}</th><th className={th}>{ta.presentes}</th></tr>
             </thead>
             <tbody>
               {historial.map(({ evento: e, presentes: p, total }) => (
@@ -218,7 +219,7 @@ export default function Asistencia() {
                     <p className="text-xs text-piedra-500">{fechaCorta(e.fecha)}</p>
                   </td>
                   <td className={td}>
-                    {total ? <Etiqueta tono={p / total >= 0.7 ? "verde" : "ambar"}>{p} de {total}</Etiqueta> : <Etiqueta>Sin registro</Etiqueta>}
+                    {total ? <Etiqueta tono={p / total >= 0.7 ? "verde" : "ambar"}>{ta.deTotal(p, total)}</Etiqueta> : <Etiqueta>{ta.sinRegistro}</Etiqueta>}
                   </td>
                 </tr>
               ))}

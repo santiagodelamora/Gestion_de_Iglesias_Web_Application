@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { textos } from "./i18n";
 
 // fetch lanza TypeError cuando no hay respuesta del servidor (sin internet o
-// servidor caído); su mensaje en inglés no le dice nada a la persona.
+// servidor caído); su mensaje técnico no le dice nada a la persona.
 const mensajeDe = (e: unknown, otro: string) => {
-  if (e instanceof TypeError && /fetch|network|load failed/i.test(e.message)) {
-    return "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
-  }
+  if (e instanceof TypeError && /fetch|network|load failed/i.test(e.message)) return textos().errores.conexion;
   return e instanceof Error ? e.message : otro;
 };
 
@@ -22,7 +21,7 @@ export function useCarga<T>(cargar: () => Promise<T>, inicial: T) {
       setDatos(await cargar());
       setError("");
     } catch (e) {
-      setError(mensajeDe(e, "No se pudieron cargar los datos."));
+      setError(mensajeDe(e, textos().errores.cargarDatos));
     } finally {
       setCargando(false);
     }
@@ -42,6 +41,6 @@ export async function intentar(accion: () => Promise<unknown>): Promise<string> 
     await accion();
     return "";
   } catch (e) {
-    return mensajeDe(e, "Ocurrió un error inesperado.");
+    return mensajeDe(e, textos().errores.inesperado);
   }
 }

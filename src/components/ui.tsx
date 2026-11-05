@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff, Inbox, LoaderCircle, Lock, X } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { useIdioma } from "@/lib/i18n";
 
 // Componentes básicos de interfaz compartidos por todos los módulos.
 
@@ -58,15 +59,17 @@ export function Entrada({ className, ...p }: ComponentProps<"input">) {
 // Campo de contraseña con un botón de ojo para mostrar u ocultar lo escrito
 export function EntradaContrasena({ className, ...p }: Omit<ComponentProps<"input">, "type">) {
   const [visible, setVisible] = useState(false);
+  const { t } = useIdioma();
+  const etiqueta = visible ? t.ui.ocultarContrasena : t.ui.mostrarContrasena;
   return (
     <div className="relative">
       <input type={visible ? "text" : "password"} className={unir(campo, "pr-10", className)} {...p} />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        aria-label={etiqueta}
         aria-pressed={visible}
-        title={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        title={etiqueta}
         className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-piedra-500 transition-colors hover:text-piedra-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marca-500"
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -162,6 +165,7 @@ export function Modal({
 }) {
   const dialogo = useRef<HTMLDivElement>(null);
   const cerrar = useRef(alCerrar);
+  const { t } = useIdioma();
   useEffect(() => {
     cerrar.current = alCerrar;
   });
@@ -206,7 +210,7 @@ export function Modal({
           <button
             onClick={alCerrar}
             className="rounded-md p-1.5 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-700"
-            aria-label="Cerrar"
+            aria-label={t.comun.cerrar}
           >
             <X size={18} />
           </button>
@@ -241,11 +245,12 @@ export function Vacio({ children }: { children: ReactNode }) {
 }
 
 export function SinAcceso() {
+  const { t } = useIdioma();
   return (
     <Tarjeta className="flex flex-col items-center p-12 text-center">
       <Lock size={22} className="mb-3 text-piedra-400" />
-      <p className="font-titulo text-xl font-medium text-piedra-900">No tienes acceso a este módulo</p>
-      <p className="mt-1 text-sm text-piedra-500">Tu rol no tiene permiso para ver esta información.</p>
+      <p className="font-titulo text-xl font-medium text-piedra-900">{t.ui.sinAccesoTitulo}</p>
+      <p className="mt-1 text-sm text-piedra-500">{t.ui.sinAccesoTexto}</p>
     </Tarjeta>
   );
 }

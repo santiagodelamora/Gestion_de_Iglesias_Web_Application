@@ -7,16 +7,10 @@ import { iso } from "@/lib/datos-ejemplo";
 import { aFecha, fechaCorta, mesCorto, mxn } from "@/lib/formato";
 import { reportesPermitidos } from "@/lib/permisos";
 import { exportarExcel, exportarPdf, type Reporte, type Valor } from "@/lib/exportar";
+import { useIdioma } from "@/lib/i18n";
 import { useDatos } from "@/lib/store";
 import type { Aportacion, Asistencia, Evento, Miembro, Ministerio } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
-
-const NOMBRES: Record<string, string> = {
-  miembros: "Miembros",
-  asistencia: "Asistencia por evento",
-  ministerios: "Participación por ministerio",
-  ingresos: "Ingresos por periodo",
-};
 
 interface Datos {
   miembros: Miembro[];
@@ -28,6 +22,8 @@ interface Datos {
 
 export default function Reportes() {
   const { db, usuario, repo, sedeId, hoy } = useDatos();
+  const { t } = useIdioma();
+  const trp = t.reportes;
   const sede = db.sedes.find((s) => s.id === sedeId);
   const permitidos = reportesPermitidos(usuario!.rol);
   // Cada rol carga solo lo que necesitan sus reportes
@@ -68,18 +64,18 @@ export default function Reportes() {
     switch (tipo) {
       case "miembros":
         return {
-          columnas: ["Nombre", "Teléfono", "Correo", "Fecha de ingreso", "Estado", "Ministerios"],
+          columnas: t.reportes.columnas.miembros,
           filas: [...miembros]
             .sort((a, b) => a.nombre.localeCompare(b.nombre))
             .map((m) => [
-              m.nombre, m.telefono, m.correo, fechaCorta(m.fechaIngreso), m.activo ? "Activo" : "Inactivo",
+              m.nombre, m.telefono, m.correo, fechaCorta(m.fechaIngreso), m.activo ? t.comun.activo : t.comun.inactivo,
               ministerios.filter((x) => x.integrantes.includes(m.id)).map((x) => x.nombre).join(", "),
             ]),
         };
       case "asistencia": {
         const ids = new Set(minsVisibles.map((m) => m.id));
         return {
-          columnas: ["Fecha", "Evento", "Presentes", "Ausentes", "% asistencia"],
+          columnas: t.reportes.columnas.asistencia,
           filas: eventos
             .filter((e) => enPeriodo(e.fecha) && e.fecha <= hoy && !e.cancelado)
             .filter((e) => !soloMios || (e.ministerioId && ids.has(e.ministerioId)))
@@ -93,27 +89,27 @@ export default function Reportes() {
       }
       case "ministerios":
         return {
-          columnas: ["Ministerio", "Coordinador", "Integrantes", "Actividades en el periodo", "Asistencia promedio"],
+          columnas: t.reportes.columnas.ministerios,
           filas: minsVisibles.map((m) => {
             const acts = eventos.filter((e) => e.ministerioId === m.id && enPeriodo(e.fecha) && !e.cancelado);
             const regs = asistencias.filter((a) => acts.some((e) => e.id === a.eventoId));
             const prom = regs.length ? `${Math.round((regs.filter((a) => a.presente).length / regs.length) * 100)}%` : "—";
-            return [m.nombre, miembros.find((x) => x.id === m.coordinadorId)?.nombre ?? "Sin asignar", m.integrantes.length, acts.length, prom];
+            return [m.nombre, miembros.find((x) => x.id === m.coordinadorId)?.nombre ?? t.comun.sinAsignar, m.integrantes.length, acts.length, prom];
           }),
         };
       case "ingresos": {
-        const t = new Map<string, Record<string, number>>();
+        const porMes = new Map<string, Record<string, number>>();
         aportaciones.filter((a) => enPeriodo(a.fecha) && !a.anulada).forEach((a) => {
           const k = a.fecha.slice(0, 7);
-          const r = t.get(k) ?? { Diezmo: 0, Ofrenda: 0, Otros: 0, n: 0 };
+          const r = porMes.get(k) ?? { Diezmo: 0, Ofrenda: 0, Otros: 0, n: 0 };
           const c = a.concepto === "Diezmo" || a.concepto === "Ofrenda" ? a.concepto : "Otros";
           r[c] += a.monto;
           r.n++;
-          t.set(k, r);
+          porMes.set(k, r);
         });
         return {
-          columnas: ["Mes", "Diezmos (MXN)", "Ofrendas (MXN)", "Otros (MXN)", "Total (MXN)", "Aportaciones"],
-          filas: [...t.entries()]
+          columnas: t.reportes.columnas.ingresos,
+          filas: [...porMes.entries()]
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([mes, r]) => [mesCorto(mes), r.Diezmo, r.Ofrenda, r.Otros, r.Diezmo + r.Ofrenda + r.Otros, r.n]),
           moneda: [1, 2, 3, 4],
@@ -122,13 +118,14 @@ export default function Reportes() {
       default:
         return { columnas: [], filas: [] };
     }
-  }, [tipo, desde, hasta, miembros, ministerios, minsVisibles, eventos, aportaciones, asistencias, hoy, soloMios]);
+    // t: las columnas, los estados y las fechas cambian con el idioma
+  }, [tipo, desde, hasta, miembros, ministerios, minsVisibles, eventos, aportaciones, asistencias, hoy, soloMios, t]);
 
   if (!permitidos.length) return <SinAcceso />;
   const usaPeriodo = tipo !== "miembros";
   const completo: Reporte = {
-    titulo: NOMBRES[tipo],
-    subtitulo: `${db.configuracion.nombre} · ${sede?.nombre ?? ""}${usaPeriodo ? ` · del ${fechaCorta(desde)} al ${fechaCorta(hasta)}` : ""}`,
+    titulo: trp.tipos[tipo],
+    subtitulo: `${db.configuracion.nombre} · ${sede?.nombre ?? ""}${usaPeriodo ? trp.periodo(fechaCorta(desde), fechaCorta(hasta)) : ""}`,
     ...reporte,
   };
   const exportar = async (formato: "excel" | "pdf") => {
@@ -142,16 +139,16 @@ export default function Reportes() {
     <>
       <div className="print:hidden">
         <Encabezado
-          titulo="Reportes"
-          descripcion={`Información de ${sede?.nombre ?? ""}`}
+          titulo={trp.titulo}
+          descripcion={trp.descripcion(sede?.nombre ?? "")}
           acciones={
             <>
               {/* El spinner reemplaza al icono del formato que se está generando */}
               <Boton variante="secundario" disabled={!!exportando || cargando} cargando={exportando === "excel"} onClick={() => exportar("excel")}>
-                {exportando !== "excel" && <FileSpreadsheet size={16} />} Exportar a Excel
+                {exportando !== "excel" && <FileSpreadsheet size={16} />} {trp.excel}
               </Boton>
               <Boton variante="secundario" disabled={!!exportando || cargando} cargando={exportando === "pdf"} onClick={() => exportar("pdf")}>
-                {exportando !== "pdf" && <FileText size={16} />} Exportar a PDF
+                {exportando !== "pdf" && <FileText size={16} />} {trp.pdf}
               </Boton>
             </>
           }
@@ -164,7 +161,7 @@ export default function Reportes() {
               onClick={() => setTipo(p)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium ${tipo === p ? "bg-marca-600 text-white" : "bg-white text-piedra-600 ring-1 ring-piedra-200 hover:bg-piedra-50"}`}
             >
-              {NOMBRES[p]}
+              {trp.tipos[p]}
             </button>
           ))}
         </div>
@@ -173,13 +170,13 @@ export default function Reportes() {
       <Tarjeta>
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-piedra-200 p-4">
           <div>
-            <h2 className="font-semibold">{NOMBRES[tipo]}</h2>
+            <h2 className="font-semibold">{trp.tipos[tipo]}</h2>
             <p className="text-xs text-piedra-500">{completo.subtitulo}</p>
           </div>
           {usaPeriodo && (
             <div className="flex gap-2 print:hidden">
-              <Campo etiqueta="Desde"><Entrada type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></Campo>
-              <Campo etiqueta="Hasta"><Entrada type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></Campo>
+              <Campo etiqueta={t.comun.desde}><Entrada type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></Campo>
+              <Campo etiqueta={t.comun.hasta}><Entrada type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></Campo>
             </div>
           )}
         </div>
@@ -195,7 +192,7 @@ export default function Reportes() {
             ))}
           </tbody>
         </Tabla>
-        {cargando ? <Vacio>Cargando…</Vacio> : <p className="p-4 text-xs text-piedra-500">{reporte.filas.length} registros</p>}
+        {cargando ? <Vacio>{t.comun.cargando}</Vacio> : <p className="p-4 text-xs text-piedra-500">{trp.registros(reporte.filas.length)}</p>}
       </Tarjeta>
     </>
   );

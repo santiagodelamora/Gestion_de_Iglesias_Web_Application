@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { fechaCorta } from "@/lib/formato";
+import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosMiembro } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
@@ -28,6 +29,8 @@ export default function Miembros() {
   const [errorAccion, setErrorAccion] = useState("");
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
   const { confirmar, notificar } = useConfirmacion();
+  const { t } = useIdioma();
+  const tm = t.miembros;
 
   const permiso = acceso(usuario!.rol, "miembros");
   const puedeEditar = permiso === "total";
@@ -49,7 +52,7 @@ export default function Miembros() {
   };
 
   const guardar = async () => {
-    if (!form.nombre.trim()) return setErrorForm("El nombre es obligatorio.");
+    if (!form.nombre.trim()) return setErrorForm(t.comun.nombreObligatorio);
     setGuardando(true);
     const fallo = await intentar(() =>
       editando === "nuevo" ? repo.miembros.crear(sedeId, form) : repo.miembros.editar((editando as Miembro).id, form)
@@ -66,14 +69,9 @@ export default function Miembros() {
     if (
       m.activo &&
       !(await confirmar({
-        titulo: "Desactivar miembro",
-        mensaje: (
-          <>
-            ¿Desactivar a <b>{m.nombre}</b>? Ya no aparecerá entre los miembros activos. Su historial se conserva y podrás
-            reactivar su registro desde el filtro «Inactivos».
-          </>
-        ),
-        accion: "Desactivar",
+        titulo: tm.confirmarTitulo,
+        mensaje: tm.confirmarMensaje(m.nombre),
+        accion: tm.desactivar,
       }))
     )
       return;
@@ -81,27 +79,27 @@ export default function Miembros() {
     const fallo = await intentar(() => repo.miembros.cambiarEstado(m.id, !m.activo));
     setProcesandoId(null);
     setErrorAccion(fallo);
-    if (!fallo) notificar(m.activo ? `Se desactivó a ${m.nombre}.` : `Se reactivó a ${m.nombre}.`);
+    if (!fallo) notificar(m.activo ? tm.desactivado(m.nombre) : tm.reactivado(m.nombre));
     recargar();
   };
 
   return (
     <>
       <Encabezado
-        titulo="Miembros"
-        descripcion={`${miembros.filter((m) => m.activo).length} activos en ${sede?.nombre ?? ""}`}
-        acciones={puedeEditar && <Boton onClick={() => abrir("nuevo")}><Plus size={16} /> Nuevo miembro</Boton>}
+        titulo={tm.titulo}
+        descripcion={tm.descripcion(miembros.filter((m) => m.activo).length, sede?.nombre ?? "")}
+        acciones={puedeEditar && <Boton onClick={() => abrir("nuevo")}><Plus size={16} /> {tm.nuevo}</Boton>}
       />
       <Tarjeta>
         <div className="flex flex-wrap gap-3 border-b border-piedra-200 p-4">
           <div className="relative min-w-60 flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-piedra-400" />
-            <Entrada className="pl-9" placeholder="Buscar por nombre" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+            <Entrada className="pl-9" placeholder={tm.buscar} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
           </div>
           <Selector className="max-w-40" value={filtro} onChange={(e) => setFiltro(e.target.value as Filtro)}>
-            <option value="activos">Activos</option>
-            <option value="inactivos">Inactivos</option>
-            <option value="todos">Todos</option>
+            <option value="activos">{tm.filtros.activos}</option>
+            <option value="inactivos">{tm.filtros.inactivos}</option>
+            <option value="todos">{tm.filtros.todos}</option>
           </Selector>
         </div>
         {errorAccion && <p className="m-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorAccion}</p>}
@@ -109,11 +107,11 @@ export default function Miembros() {
         <Tabla>
           <thead>
             <tr>
-              <th className={th}>Nombre</th>
-              <th className={th}>Teléfono</th>
-              <th className={th}>Correo</th>
-              <th className={th}>Ingreso</th>
-              <th className={th}>Estado</th>
+              <th className={th}>{t.comun.nombre}</th>
+              <th className={th}>{t.comun.telefono}</th>
+              <th className={th}>{t.comun.correo}</th>
+              <th className={th}>{tm.ingreso}</th>
+              <th className={th}>{t.comun.estado}</th>
               {puedeEditar && <th className={th}></th>}
             </tr>
           </thead>
@@ -124,17 +122,17 @@ export default function Miembros() {
                 <td className={`${td} whitespace-nowrap`}>{m.telefono}</td>
                 <td className={td}>{m.correo}</td>
                 <td className={td}>{fechaCorta(m.fechaIngreso)}</td>
-                <td className={td}>{m.activo ? <Etiqueta tono="verde">Activo</Etiqueta> : <Etiqueta>Inactivo</Etiqueta>}</td>
+                <td className={td}>{m.activo ? <Etiqueta tono="verde">{t.comun.activo}</Etiqueta> : <Etiqueta>{t.comun.inactivo}</Etiqueta>}</td>
                 {puedeEditar && (
                   <td className={`${td} whitespace-nowrap text-right`}>
-                    <Boton variante="fantasma" onClick={() => abrir(m)} aria-label={`Editar a ${m.nombre}`} title="Editar"><Pencil size={15} /></Boton>
+                    <Boton variante="fantasma" onClick={() => abrir(m)} aria-label={tm.editarA(m.nombre)} title={t.comun.editar}><Pencil size={15} /></Boton>
                     <Boton
                       variante={m.activo ? "peligro" : "secundario"}
                       className="ml-1 py-1"
                       cargando={procesandoId === m.id}
                       onClick={() => alternarEstado(m)}
                     >
-                      {m.activo ? "Desactivar" : "Reactivar"}
+                      {m.activo ? tm.desactivar : tm.reactivar}
                     </Boton>
                   </td>
                 )}
@@ -142,21 +140,21 @@ export default function Miembros() {
             ))}
           </tbody>
         </Tabla>
-        {cargando ? <Vacio>Cargando…</Vacio> : lista.length === 0 && <Vacio>No hay miembros que coincidan con la búsqueda.</Vacio>}
+        {cargando ? <Vacio>{t.comun.cargando}</Vacio> : lista.length === 0 && <Vacio>{tm.sinResultados}</Vacio>}
       </Tarjeta>
 
       <Modal
-        titulo={editando === "nuevo" ? "Nuevo miembro" : "Editar miembro"}
+        titulo={editando === "nuevo" ? tm.nuevo : tm.editarTitulo}
         abierto={!!editando}
         alCerrar={() => setEditando(null)}
-        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>{t.comun.cancelar}</Boton><Boton cargando={guardando} onClick={guardar}>{t.comun.guardar}</Boton></>}
       >
-        <Campo etiqueta="Nombre completo"><Entrada value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></Campo>
+        <Campo etiqueta={t.comun.nombreCompleto}><Entrada value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></Campo>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Campo etiqueta="Teléfono"><Entrada value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} /></Campo>
-          <Campo etiqueta="Fecha de ingreso"><Entrada type="date" value={form.fechaIngreso} onChange={(e) => setForm({ ...form, fechaIngreso: e.target.value })} /></Campo>
+          <Campo etiqueta={t.comun.telefono}><Entrada value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} /></Campo>
+          <Campo etiqueta={tm.fechaIngreso}><Entrada type="date" value={form.fechaIngreso} onChange={(e) => setForm({ ...form, fechaIngreso: e.target.value })} /></Campo>
         </div>
-        <Campo etiqueta="Correo electrónico"><Entrada type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} /></Campo>
+        <Campo etiqueta={t.comun.correoElectronico}><Entrada type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} /></Campo>
         {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
       </Modal>
     </>

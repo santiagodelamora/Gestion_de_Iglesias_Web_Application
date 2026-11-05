@@ -4,7 +4,8 @@ import { useCallback, useMemo } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Semana } from "@/components/semana";
 import { Encabezado, Etiqueta, Indicador, Indicadores, Liston, Tarjeta } from "@/components/ui";
-import { fechaCorta, fechaLarga, mesCorto, mxn } from "@/lib/formato";
+import { fechaDiaMes, fechaLarga, mesCorto, mxn } from "@/lib/formato";
+import { useIdioma } from "@/lib/i18n";
 import { puedeVer, veFinanzas } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
 import type { Anuncio, Aportacion, Asistencia, Evento, Miembro, Ministerio } from "@/lib/types";
@@ -36,6 +37,8 @@ const GLOBO = {
 // puede ver; las cifras financieras son para administrador, pastor y tesorero.
 export default function Panel() {
   const { usuario, repo, sedeId, hoy } = useDatos();
+  const { t } = useIdioma();
+  const tp = t.panel;
   const rol = usuario!.rol;
   const finanzas = veFinanzas(rol);
   const veAsistencia = puedeVer(rol, "asistencia");
@@ -67,7 +70,7 @@ export default function Panel() {
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
       .slice(-8)
       .map((e) => ({
-        fecha: fechaCorta(e.fecha).replace(/ \d{4}$/, ""),
+        fecha: e.fecha,
         asistentes: presentes.filter((a) => a.eventoId === e.id).length,
       }));
 
@@ -82,7 +85,7 @@ export default function Panel() {
     const ingresos = [...porMes.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
-      .map(([mes, total]) => ({ mes: mesCorto(mes), total, actual: mes === mesActual }));
+      .map(([mes, total]) => ({ mes, total, actual: mes === mesActual }));
 
     return {
       activos: miembros.filter((m) => m.activo).length,
@@ -103,36 +106,37 @@ export default function Panel() {
 
   return (
     <>
-      <Encabezado titulo={`Hola, ${usuario!.nombre.split(" ")[0]}`} descripcion={hoy && fechaLarga(hoy)} />
+      <Encabezado titulo={tp.saludo(usuario!.nombre.split(" ")[0])} descripcion={hoy && fechaLarga(hoy)} />
 
       <Semana eventos={d.eventos} hoy={hoy} />
 
       <div className="mt-6">
         <Indicadores>
-          <Indicador titulo="Miembros activos" valor={datos.activos} detalle={`de ${miembros.length} registrados`} />
-          <Indicador titulo="Eventos próximos" valor={datos.proximos} detalle="programados desde hoy" />
-          {veAsistencia && <Indicador titulo="Asistencias del mes" valor={datos.asistenciasMes} detalle="presencias registradas" />}
-          <Indicador titulo="Ministerios" valor={ministerios.length} detalle="grupos de trabajo" />
-          {finanzas && <Indicador titulo="Ingresos del mes" valor={datos.ingresoMes} formato={mxn} detalle="sin contar aportaciones anuladas" />}
+          <Indicador titulo={tp.miembrosActivos} valor={datos.activos} detalle={tp.deRegistrados(miembros.length)} />
+          <Indicador titulo={tp.eventosProximos} valor={datos.proximos} detalle={tp.desdeHoy} />
+          {veAsistencia && <Indicador titulo={tp.asistenciasMes} valor={datos.asistenciasMes} detalle={tp.presencias} />}
+          <Indicador titulo={tp.ministerios} valor={ministerios.length} detalle={tp.gruposTrabajo} />
+          {finanzas && <Indicador titulo={tp.ingresosMes} valor={datos.ingresoMes} formato={mxn} detalle={tp.sinAnuladas} />}
         </Indicadores>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {veAsistencia && (
           <Tarjeta className="p-5">
-            <h2 className="font-titulo text-xl font-medium">Asistencia a cultos dominicales</h2>
-            <p className="mb-4 text-sm text-piedra-500">Personas presentes en los últimos 8 domingos</p>
+            <h2 className="font-titulo text-xl font-medium">{tp.asistenciaCultos}</h2>
+            <p className="mb-4 text-sm text-piedra-500">{tp.ultimosDomingos}</p>
             <div className="h-60">
               <ResponsiveContainer>
                 <AreaChart data={datos.cultos} margin={{ left: -20, right: 8, top: 4 }}>
                   <CartesianGrid stroke={CUADRICULA} vertical={false} />
-                  <XAxis dataKey="fecha" tick={EJE} axisLine={false} tickLine={false} />
+                  {/* Las fechas se formatean al pintar, en el idioma activo */}
+                  <XAxis dataKey="fecha" tick={EJE} axisLine={false} tickLine={false} tickFormatter={fechaDiaMes} />
                   <YAxis tick={EJE} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip {...GLOBO} />
+                  <Tooltip {...GLOBO} labelFormatter={(v) => fechaDiaMes(String(v))} />
                   <Area
                     type="monotone"
                     dataKey="asistentes"
-                    name="Asistentes"
+                    name={tp.asistentes}
                     stroke={MARCA}
                     strokeWidth={2}
                     fill={MARCA_FONDO}
@@ -148,16 +152,16 @@ export default function Panel() {
 
         {finanzas && (
           <Tarjeta className="p-5">
-            <h2 className="font-titulo text-xl font-medium">Ingresos por mes</h2>
-            <p className="mb-4 text-sm text-piedra-500">Aportaciones registradas en pesos; el mes en curso, en verde oscuro</p>
+            <h2 className="font-titulo text-xl font-medium">{tp.ingresosPorMes}</h2>
+            <p className="mb-4 text-sm text-piedra-500">{tp.ingresosDetalle}</p>
             <div className="h-60">
               <ResponsiveContainer>
                 <BarChart data={datos.ingresos} margin={{ left: 0, right: 8, top: 4 }}>
                   <CartesianGrid stroke={CUADRICULA} vertical={false} />
-                  <XAxis dataKey="mes" tick={EJE} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="mes" tick={EJE} axisLine={false} tickLine={false} tickFormatter={mesCorto} />
                   <YAxis tick={EJE} axisLine={false} tickLine={false} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
-                  <Tooltip {...GLOBO} formatter={(v) => mxn(Number(v))} />
-                  <Bar dataKey="total" name="Ingresos" radius={[4, 4, 0, 0]} maxBarSize={44}>
+                  <Tooltip {...GLOBO} formatter={(v) => mxn(Number(v))} labelFormatter={(v) => mesCorto(String(v))} />
+                  <Bar dataKey="total" name={tp.ingresos} radius={[4, 4, 0, 0]} maxBarSize={44}>
                     {datos.ingresos.map((m) => (
                       <Cell key={m.mes} fill={m.actual ? MARCA : MARCA_CLARO} />
                     ))}
@@ -169,7 +173,7 @@ export default function Panel() {
         )}
 
         <Tarjeta className={`p-5 ${avisosAncho ? "lg:col-span-2" : ""}`}>
-          <h2 className="mb-4 font-titulo text-xl font-medium">Avisos</h2>
+          <h2 className="mb-4 font-titulo text-xl font-medium">{tp.avisos}</h2>
           <ListaAvisos avisos={avisos} columnas={avisosAncho} />
         </Tarjeta>
       </div>
@@ -178,15 +182,16 @@ export default function Panel() {
 }
 
 function ListaAvisos({ avisos, columnas }: { avisos: Anuncio[]; columnas: boolean }) {
+  const { t } = useIdioma();
   return (
     <ul className={`grid gap-3 ${columnas ? "md:grid-cols-3" : ""}`}>
-      {avisos.length === 0 && <li className="text-sm text-piedra-500">No hay avisos publicados.</li>}
+      {avisos.length === 0 && <li className="text-sm text-piedra-500">{t.panel.sinAvisos}</li>}
       {avisos.map((a) => (
         <li key={a.id} className="relative rounded-lg border border-piedra-200 p-4 pt-3.5">
           {a.importante && <Liston className="right-4 h-7" />}
           <div className="flex flex-wrap items-center gap-2 pr-6">
             <p className="font-semibold text-piedra-900">{a.titulo}</p>
-            {a.importante && <Etiqueta tono="liston">Importante</Etiqueta>}
+            {a.importante && <Etiqueta tono="liston">{t.comun.importante}</Etiqueta>}
           </div>
           <p className="mt-1 text-sm text-piedra-600">{a.contenido}</p>
         </li>

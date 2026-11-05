@@ -55,6 +55,7 @@ src/
     catalogos.ts      Conceptos de aportación, métodos de pago, tipos de evento
     datos-ejemplo.ts  Generador de datos ficticios (modo demostración)
     exportar.ts       Exportación de reportes a Excel (.xlsx) y PDF
+    i18n/             Textos de la interfaz en español (es.tsx) e inglés (en.tsx)
     store.tsx         Sesión y estado global (modo demostración o Supabase)
     repositorio/      Acceso a datos: implementación demo y Supabase
     supabase/         Clientes de Supabase (navegador, servidor, administrador)
@@ -69,4 +70,4 @@ supabase/
 ## Tecnología
 Next.js 15 (React 19, TypeScript), Tailwind CSS 4, Recharts para gráficas, lucide-react para íconos y Supabase (PostgreSQL, autenticación, almacenamiento y políticas de seguridad por sede).
 
-Montos en pesos mexicanos (MXN) y fechas en formato es-MX.
+La interfaz está en español o en inglés: cada persona lo elige en Configuración y se recuerda en su navegador. Los montos son en pesos mexicanos (MXN) y las fechas siguen el idioma elegido (es-MX o en-US). Los datos capturados (nombres, títulos, anuncios) no se traducen.

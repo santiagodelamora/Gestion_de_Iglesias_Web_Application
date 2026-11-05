@@ -3,6 +3,7 @@
 import { CircleCheck, X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Boton, Modal } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
 
 // Confirmación antes de desactivar, anular, cancelar o eliminar algo, y aviso
 // breve cuando la acción terminó. Las páginas los usan con useConfirmacion():
@@ -28,6 +29,7 @@ const ContextoConfirmacion = createContext<Contexto | null>(null);
 export function ProveedorConfirmacion({ children }: { children: ReactNode }) {
   const [pendiente, setPendiente] = useState<(OpcionesConfirmacion & { responder: (ok: boolean) => void }) | null>(null);
   const [aviso, setAviso] = useState<{ texto: string; clave: number } | null>(null);
+  const { t } = useIdioma();
 
   const confirmar = useCallback(
     (opciones: OpcionesConfirmacion) => new Promise<boolean>((responder) => setPendiente({ ...opciones, responder })),
@@ -58,7 +60,7 @@ export function ProveedorConfirmacion({ children }: { children: ReactNode }) {
         pie={
           <>
             {/* El foco empieza en la opción segura: Enter no confirma por accidente */}
-            <Boton variante="secundario" data-autofocus onClick={() => responder(false)}>{pendiente?.cancelar ?? "Cancelar"}</Boton>
+            <Boton variante="secundario" data-autofocus onClick={() => responder(false)}>{pendiente?.cancelar ?? t.comun.cancelar}</Boton>
             <Boton variante="peligro" onClick={() => responder(true)}>{pendiente?.accion}</Boton>
           </>
         }
@@ -76,8 +78,8 @@ export function ProveedorConfirmacion({ children }: { children: ReactNode }) {
             <span className="flex-1">{aviso.texto}</span>
             <button
               onClick={() => setAviso(null)}
-              aria-label="Cerrar aviso"
-              title="Cerrar aviso"
+              aria-label={t.ui.cerrarAviso}
+              title={t.ui.cerrarAviso}
               className="rounded-md p-1 text-piedra-400 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               <X size={14} />

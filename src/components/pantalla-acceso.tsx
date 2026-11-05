@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
+import { useIdioma } from "@/lib/i18n";
 
 // Marco de las pantallas sin sesión (inicio de sesión y restablecer contraseña).
 // En escritorio, a la izquierda va la "portada": verde pino con el listón y el
@@ -17,6 +18,7 @@ export function PantallaAcceso({
   subtitulo?: string;
   children: ReactNode;
 }) {
+  const { t } = useIdioma();
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden overflow-hidden bg-marca-900 py-14 pl-28 pr-12 text-marca-50 lg:flex lg:flex-col lg:justify-between xl:pr-20">
@@ -29,9 +31,9 @@ export function PantallaAcceso({
 
         <figure className="max-w-xl">
           <blockquote className="animate-revelar font-titulo text-5xl font-normal italic leading-[1.1] text-white [animation-delay:500ms] xl:text-6xl">
-            “Hágase todo decentemente y con orden.”
+            {t.acceso.versiculo}
           </blockquote>
-          <figcaption className="mt-5 animate-revelar text-marca-200 [animation-delay:800ms]">1 Corintios 14:40</figcaption>
+          <figcaption className="mt-5 animate-revelar text-marca-200 [animation-delay:800ms]">{t.acceso.cita}</figcaption>
         </figure>
       </section>
 
