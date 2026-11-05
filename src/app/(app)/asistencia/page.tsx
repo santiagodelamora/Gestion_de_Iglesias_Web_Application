@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, Search, X } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { fechaCorta } from "@/lib/formato";
 import { acceso } from "@/lib/permisos";
@@ -62,6 +63,9 @@ export default function Asistencia() {
 
   const [marcas, setMarcas] = useState<Record<string, boolean>>({});
   const [cargadoPara, setCargadoPara] = useState("");
+  // Hay marcas que todavía no se guardan
+  const [sinGuardar, setSinGuardar] = useState(false);
+  const { confirmar } = useConfirmacion();
   if (evento && cargadoPara !== evento.id) {
     const previas = Object.fromEntries(
       asistencias.filter((a) => a.eventoId === evento.id).map((a) => [a.miembroId, a.presente])
@@ -70,7 +74,16 @@ export default function Asistencia() {
     setCargadoPara(evento.id);
     setGuardado(false);
     setErrorGuardar("");
+    setSinGuardar(false);
   }
+
+  // Al recargar o cerrar la pestaña con marcas pendientes, el navegador pregunta antes
+  useEffect(() => {
+    if (!sinGuardar) return;
+    const alSalir = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", alSalir);
+    return () => window.removeEventListener("beforeunload", alSalir);
+  }, [sinGuardar]);
 
   const historial = useMemo(
     () =>
@@ -87,6 +100,29 @@ export default function Asistencia() {
   const presentes = convocados.filter((m) => marcas[m.id]).length;
   const visibles = convocados.filter((m) => m.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()));
 
+  // Cualquier cambio deja la lista pendiente de guardar y retira el aviso de "guardada"
+  const marcar = (cambios: Record<string, boolean>) => {
+    setMarcas({ ...marcas, ...cambios });
+    setSinGuardar(true);
+    setGuardado(false);
+  };
+
+  // Cambiar de evento descarta las marcas sin guardar, así que se pregunta antes
+  const elegirEvento = async (id: string) => {
+    if (id === evento?.id) return;
+    if (
+      sinGuardar &&
+      !(await confirmar({
+        titulo: "Asistencia sin guardar",
+        mensaje: "Marcaste asistencia que aún no guardas. Si cambias de evento, se perderán esas marcas.",
+        accion: "Descartar y cambiar",
+        cancelar: "Seguir pasando lista",
+      }))
+    )
+      return;
+    setEventoId(id);
+  };
+
   const guardar = async () => {
     if (!evento) return;
     setGuardando(true);
@@ -99,6 +135,7 @@ export default function Asistencia() {
     setGuardando(false);
     setErrorGuardar(fallo);
     setGuardado(!fallo);
+    if (!fallo) setSinGuardar(false);
     recargar();
   };
 
@@ -110,7 +147,7 @@ export default function Asistencia() {
         <Tarjeta className="lg:col-span-3">
           <div className="grid gap-3 border-b border-piedra-200 p-4 sm:grid-cols-2">
             <Campo etiqueta="Evento">
-              <Selector value={evento?.id ?? ""} onChange={(e) => setEventoId(e.target.value)}>
+              <Selector value={evento?.id ?? ""} onChange={(e) => elegirEvento(e.target.value)}>
                 {elegibles.map((e) => (
                   <option key={e.id} value={e.id}>{fechaCorta(e.fecha)} · {e.titulo}</option>
                 ))}
@@ -130,8 +167,8 @@ export default function Asistencia() {
                   <strong>{presentes}</strong> presentes · <strong>{convocados.length - presentes}</strong> ausentes
                 </span>
                 <div className="flex gap-2">
-                  <Boton variante="secundario" onClick={() => setMarcas(Object.fromEntries(convocados.map((m) => [m.id, true])))}>Todos presentes</Boton>
-                  <Boton disabled={guardando} onClick={guardar}>Guardar asistencia</Boton>
+                  <Boton variante="secundario" onClick={() => marcar(Object.fromEntries(convocados.map((m) => [m.id, true])))}>Todos presentes</Boton>
+                  <Boton cargando={guardando} onClick={guardar}>Guardar asistencia</Boton>
                 </div>
               </div>
               {guardado && <p className="mx-4 mb-3 rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">Asistencia guardada.</p>}
@@ -142,14 +179,14 @@ export default function Asistencia() {
                     <span className="text-sm">{m.nombre}</span>
                     <div className="flex gap-1">
                       <button
-                        onClick={() => setMarcas({ ...marcas, [m.id]: true })}
+                        onClick={() => marcar({ [m.id]: true })}
                         aria-pressed={!!marcas[m.id]}
                         className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold ${marcas[m.id] ? "bg-marca-700 text-white" : "bg-piedra-100 text-piedra-600 hover:bg-piedra-200"}`}
                       >
                         <Check size={14} /> Presente
                       </button>
                       <button
-                        onClick={() => setMarcas({ ...marcas, [m.id]: false })}
+                        onClick={() => marcar({ [m.id]: false })}
                         aria-pressed={!marcas[m.id]}
                         className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold ${!marcas[m.id] ? "bg-piedra-600 text-white" : "bg-piedra-100 text-piedra-600 hover:bg-piedra-200"}`}
                       >
@@ -175,7 +212,7 @@ export default function Asistencia() {
             </thead>
             <tbody>
               {historial.map(({ evento: e, presentes: p, total }) => (
-                <tr key={e.id} className="cursor-pointer hover:bg-piedra-50" onClick={() => setEventoId(e.id)}>
+                <tr key={e.id} className="cursor-pointer hover:bg-piedra-50" onClick={() => elegirEvento(e.id)}>
                   <td className={td}>
                     <p className="font-medium text-piedra-900">{e.titulo}</p>
                     <p className="text-xs text-piedra-500">{fechaCorta(e.fecha)}</p>

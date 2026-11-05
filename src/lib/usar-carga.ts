@@ -2,6 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+// fetch lanza TypeError cuando no hay respuesta del servidor (sin internet o
+// servidor caído); su mensaje en inglés no le dice nada a la persona.
+const mensajeDe = (e: unknown, otro: string) => {
+  if (e instanceof TypeError && /fetch|network|load failed/i.test(e.message)) {
+    return "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
+  }
+  return e instanceof Error ? e.message : otro;
+};
+
 // Carga datos con una función asíncrona y permite volver a cargarlos tras un cambio
 export function useCarga<T>(cargar: () => Promise<T>, inicial: T) {
   const [datos, setDatos] = useState<T>(inicial);
@@ -13,7 +22,7 @@ export function useCarga<T>(cargar: () => Promise<T>, inicial: T) {
       setDatos(await cargar());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudieron cargar los datos.");
+      setError(mensajeDe(e, "No se pudieron cargar los datos."));
     } finally {
       setCargando(false);
     }
@@ -33,6 +42,6 @@ export async function intentar(accion: () => Promise<unknown>): Promise<string> 
     await accion();
     return "";
   } catch (e) {
-    return e instanceof Error ? e.message : "Ocurrió un error inesperado.";
+    return mensajeDe(e, "Ocurrió un error inesperado.");
   }
 }

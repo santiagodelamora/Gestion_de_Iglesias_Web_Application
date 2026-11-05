@@ -141,6 +141,12 @@ export function Encabezado({
   );
 }
 
+// Modales abiertos, del más antiguo al más reciente: Escape cierra solo el de
+// arriba (por ejemplo, una confirmación abierta sobre otro modal).
+const modalesAbiertos: object[] = [];
+
+const enfocables = "input:not([type=hidden]):not(:disabled), select:not(:disabled), textarea:not(:disabled)";
+
 export function Modal({
   titulo,
   abierto,
@@ -154,6 +160,32 @@ export function Modal({
   children: ReactNode;
   pie?: ReactNode;
 }) {
+  const dialogo = useRef<HTMLDivElement>(null);
+  const cerrar = useRef(alCerrar);
+  useEffect(() => {
+    cerrar.current = alCerrar;
+  });
+
+  // Al abrir: enfoca el elemento marcado con data-autofocus, el primer campo o el
+  // propio diálogo. Al cerrar: devuelve el foco a lo que lo abrió.
+  useEffect(() => {
+    if (!abierto) return;
+    const este = {};
+    modalesAbiertos.push(este);
+    const anterior = document.activeElement as HTMLElement | null;
+    const caja = dialogo.current;
+    (caja?.querySelector<HTMLElement>("[data-autofocus]") ?? caja?.querySelector<HTMLElement>(enfocables) ?? caja)?.focus();
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && modalesAbiertos.at(-1) === este) cerrar.current();
+    };
+    document.addEventListener("keydown", alTeclear);
+    return () => {
+      document.removeEventListener("keydown", alTeclear);
+      modalesAbiertos.splice(modalesAbiertos.indexOf(este), 1);
+      anterior?.focus();
+    };
+  }, [abierto]);
+
   if (!abierto) return null;
   return (
     <div
@@ -161,10 +193,12 @@ export function Modal({
       onClick={alCerrar}
     >
       <div
+        ref={dialogo}
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="max-h-[90vh] w-full max-w-lg animate-emerger overflow-y-auto rounded-xl bg-white shadow-2xl shadow-piedra-950/25"
+        tabIndex={-1}
+        className="max-h-[90vh] w-full max-w-lg animate-emerger overflow-y-auto rounded-xl bg-white shadow-2xl shadow-piedra-950/25 outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-piedra-200 px-6 py-4">

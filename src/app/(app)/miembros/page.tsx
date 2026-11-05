@@ -2,6 +2,7 @@
 
 import { Pencil, Plus, Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { fechaCorta } from "@/lib/formato";
 import { acceso } from "@/lib/permisos";
@@ -25,6 +26,8 @@ export default function Miembros() {
   const [errorForm, setErrorForm] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [errorAccion, setErrorAccion] = useState("");
+  const [procesandoId, setProcesandoId] = useState<string | null>(null);
+  const { confirmar, notificar } = useConfirmacion();
 
   const permiso = acceso(usuario!.rol, "miembros");
   const puedeEditar = permiso === "total";
@@ -57,10 +60,28 @@ export default function Miembros() {
     recargar();
   };
 
-  // Baja lógica: el registro se conserva y puede reactivarse
+  // Baja lógica: el registro se conserva y puede reactivarse. Desactivar se
+  // confirma antes porque el miembro sale de la lista de activos.
   const alternarEstado = async (m: Miembro) => {
+    if (
+      m.activo &&
+      !(await confirmar({
+        titulo: "Desactivar miembro",
+        mensaje: (
+          <>
+            ¿Desactivar a <b>{m.nombre}</b>? Ya no aparecerá entre los miembros activos. Su historial se conserva y podrás
+            reactivar su registro desde el filtro «Inactivos».
+          </>
+        ),
+        accion: "Desactivar",
+      }))
+    )
+      return;
+    setProcesandoId(m.id);
     const fallo = await intentar(() => repo.miembros.cambiarEstado(m.id, !m.activo));
+    setProcesandoId(null);
     setErrorAccion(fallo);
+    if (!fallo) notificar(m.activo ? `Se desactivó a ${m.nombre}.` : `Se reactivó a ${m.nombre}.`);
     recargar();
   };
 
@@ -106,8 +127,13 @@ export default function Miembros() {
                 <td className={td}>{m.activo ? <Etiqueta tono="verde">Activo</Etiqueta> : <Etiqueta>Inactivo</Etiqueta>}</td>
                 {puedeEditar && (
                   <td className={`${td} whitespace-nowrap text-right`}>
-                    <Boton variante="fantasma" onClick={() => abrir(m)} aria-label="Editar"><Pencil size={15} /></Boton>
-                    <Boton variante={m.activo ? "peligro" : "secundario"} className="ml-1 py-1" onClick={() => alternarEstado(m)}>
+                    <Boton variante="fantasma" onClick={() => abrir(m)} aria-label={`Editar a ${m.nombre}`} title="Editar"><Pencil size={15} /></Boton>
+                    <Boton
+                      variante={m.activo ? "peligro" : "secundario"}
+                      className="ml-1 py-1"
+                      cargando={procesandoId === m.id}
+                      onClick={() => alternarEstado(m)}
+                    >
                       {m.activo ? "Desactivar" : "Reactivar"}
                     </Boton>
                   </td>
@@ -123,7 +149,7 @@ export default function Miembros() {
         titulo={editando === "nuevo" ? "Nuevo miembro" : "Editar miembro"}
         abierto={!!editando}
         alCerrar={() => setEditando(null)}
-        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={guardar}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Guardar</Boton></>}
       >
         <Campo etiqueta="Nombre completo"><Entrada value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></Campo>
         <div className="grid gap-4 sm:grid-cols-2">

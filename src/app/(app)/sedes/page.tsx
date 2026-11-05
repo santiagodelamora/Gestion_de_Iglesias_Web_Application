@@ -78,7 +78,7 @@ export default function Sedes() {
         titulo={editandoId ? "Editar sede" : "Nueva sede"}
         abierto={!!form}
         alCerrar={() => setForm(null)}
-        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={guardar}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Guardar</Boton></>}
       >
         {form && (
           <>

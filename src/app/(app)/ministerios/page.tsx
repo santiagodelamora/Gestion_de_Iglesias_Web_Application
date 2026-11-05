@@ -2,6 +2,7 @@
 
 import { Plus, UserMinus, UsersRound } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { AreaTexto, Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tarjeta } from "@/components/ui";
 import { fechaCorta } from "@/lib/formato";
 import { acceso } from "@/lib/permisos";
@@ -32,6 +33,7 @@ export default function Ministerios() {
   const [agregar, setAgregar] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const { confirmar, notificar } = useConfirmacion();
 
   if (!permiso) return <SinAcceso />;
 
@@ -55,6 +57,18 @@ export default function Ministerios() {
     if (!nuevo.nombre.trim()) return setErrorAccion("El nombre es obligatorio.");
     const datosNuevo = { nombre: nuevo.nombre.trim(), descripcion: nuevo.descripcion, coordinadorId: nuevo.coordinadorId || undefined };
     if (await ejecutar(() => repo.ministerios.crear(sedeId, datosNuevo))) setNuevo(null);
+  };
+
+  const quitarIntegrante = async (ministerio: Ministerio, id: string) => {
+    const quien = nombre(id);
+    const seguro = await confirmar({
+      titulo: "Quitar integrante",
+      mensaje: <>¿Quitar a <b>{quien}</b> de <b>{ministerio.nombre}</b>? Podrás volver a agregar a esta persona después.</>,
+      accion: "Quitar",
+    });
+    if (seguro && (await ejecutar(() => repo.ministerios.quitarIntegrante(ministerio.id, id)))) {
+      notificar(`Se quitó a ${quien} de ${ministerio.nombre}.`);
+    }
   };
 
   return (
@@ -139,9 +153,10 @@ export default function Ministerios() {
                   {puedeEditar(abierto) && id !== abierto.coordinadorId && (
                     <button
                       className="text-piedra-400 hover:text-red-600"
-                      aria-label="Quitar del ministerio"
+                      aria-label={`Quitar a ${nombre(id)} del ministerio`}
+                      title="Quitar del ministerio"
                       disabled={guardando}
-                      onClick={() => ejecutar(() => repo.ministerios.quitarIntegrante(abierto.id, id))}
+                      onClick={() => quitarIntegrante(abierto, id)}
                     >
                       <UserMinus size={16} />
                     </button>
@@ -166,7 +181,7 @@ export default function Ministerios() {
         titulo="Nuevo ministerio"
         abierto={!!nuevo}
         alCerrar={() => setNuevo(null)}
-        pie={<><Boton variante="secundario" onClick={() => setNuevo(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={crear}>Crear</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setNuevo(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={crear}>Crear</Boton></>}
       >
         {nuevo && (
           <>

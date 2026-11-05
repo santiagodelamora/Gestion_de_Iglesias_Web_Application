@@ -2,6 +2,7 @@
 
 import { Lock, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { CONCEPTOS, METODOS } from "@/lib/catalogos";
 import { fechaCorta, mesCorto, mxn } from "@/lib/formato";
@@ -28,6 +29,8 @@ export default function Donaciones() {
   const [errorForm, setErrorForm] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [procesandoId, setProcesandoId] = useState<string | null>(null);
+  const { confirmar, notificar } = useConfirmacion();
 
   const movimientos = useMemo(
     () => todas.filter((a) => a.fecha >= desde && a.fecha <= hasta).sort((a, b) => b.fecha.localeCompare(a.fecha)),
@@ -83,9 +86,28 @@ export default function Donaciones() {
     recargar();
   };
 
-  // Una aportación con error no se borra: se anula y se registra de nuevo
+  // Una aportación con error no se borra: se anula y se registra de nuevo.
+  // Anular se confirma antes porque cambia los totales.
   const alternarAnulada = async (a: Aportacion) => {
-    setErrorAccion(await intentar(() => repo.aportaciones.cambiarAnulada(a.id, !a.anulada)));
+    if (
+      !a.anulada &&
+      !(await confirmar({
+        titulo: "Anular aportación",
+        mensaje: (
+          <>
+            ¿Anular la aportación de <b>{mxn(a.monto)}</b> ({a.concepto}) del {fechaCorta(a.fecha)}? Dejará de sumar en los totales y
+            reportes. Podrás restaurarla después.
+          </>
+        ),
+        accion: "Anular",
+      }))
+    )
+      return;
+    setProcesandoId(a.id);
+    const fallo = await intentar(() => repo.aportaciones.cambiarAnulada(a.id, !a.anulada));
+    setProcesandoId(null);
+    setErrorAccion(fallo);
+    if (!fallo) notificar(a.anulada ? "Se restauró la aportación." : "Se anuló la aportación.");
     recargar();
   };
 
@@ -140,7 +162,11 @@ export default function Donaciones() {
                     <td className={`${td} text-right font-medium ${a.anulada ? "line-through" : ""}`}>{mxn(a.monto)}</td>
                     {puedeRegistrar && (
                       <td className={`${td} text-right`}>
-                        <button className="text-xs text-piedra-500 hover:text-red-600" onClick={() => alternarAnulada(a)}>
+                        <button
+                          className="text-xs text-piedra-500 hover:text-red-600 disabled:cursor-wait disabled:opacity-50"
+                          disabled={procesandoId === a.id}
+                          onClick={() => alternarAnulada(a)}
+                        >
                           {a.anulada ? "Restaurar" : "Anular"}
                         </button>
                       </td>
@@ -189,7 +215,7 @@ export default function Donaciones() {
         titulo="Registrar aportación"
         abierto={!!form}
         alCerrar={() => setForm(null)}
-        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={guardar}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Guardar</Boton></>}
       >
         {form && (
           <>

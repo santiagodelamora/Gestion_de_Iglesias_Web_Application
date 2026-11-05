@@ -49,7 +49,8 @@ export default function Login() {
   };
 
   const pedirEnlace = async () => {
-    if (!correo.trim()) return;
+    if (!correo.trim()) return setError("Escribe tu correo electrónico.");
+    setError("");
     setEnviando(true);
     const fallo = await recuperar(correo);
     setEnviando(false);
@@ -146,7 +147,7 @@ export default function Login() {
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <div className="flex gap-2">
             <Boton variante="secundario" onClick={() => irA("entrar")}>Volver</Boton>
-            <Boton className="flex-1" disabled={enviando} onClick={pedirEnlace}>Enviar enlace</Boton>
+            <Boton className="flex-1" cargando={enviando} onClick={pedirEnlace}>{enviando ? "Enviando…" : "Enviar enlace"}</Boton>
           </div>
         </div>
       )}

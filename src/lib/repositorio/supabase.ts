@@ -145,12 +145,35 @@ const aAportacion = (f: FilaAportacion): Aportacion => ({
 
 const ORDEN_DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
+// Traduce los errores de Supabase y PostgreSQL más comunes a un mensaje que diga
+// qué pasó y qué hacer. Los demás dejan el original en la consola.
+function mensajeError(error: { message: string; code?: string }) {
+  if (/fetch|network|load failed/i.test(error.message)) {
+    return "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
+  }
+  switch (error.code) {
+    case "42501":
+      return "No tienes permiso para realizar esta acción.";
+    case "23505":
+      return "Ya existe un registro con esos datos.";
+    case "23503":
+      return "No se puede completar porque el registro está ligado a otros datos.";
+    case "23502":
+    case "23514":
+    case "22P02":
+    case "22007":
+    case "22008":
+      return "Algún dato no tiene un formato válido. Revisa el formulario e inténtalo de nuevo.";
+    case "PGRST301":
+      return "Tu sesión expiró. Vuelve a iniciar sesión.";
+  }
+  console.error(error);
+  return "No se pudo completar la acción. Inténtalo de nuevo en unos minutos.";
+}
+
 // Convierte el error de Supabase en una excepción con mensaje en español
 function revisar<T>(r: { data: T; error: { message: string; code?: string } | null }): T {
-  if (r.error) {
-    if (r.error.code === "42501") throw new Error("No tienes permiso para realizar esta acción.");
-    throw new Error(r.error.message);
-  }
+  if (r.error) throw new Error(mensajeError(r.error));
   return r.data;
 }
 
@@ -228,7 +251,7 @@ export function repositorioSupabase(): Repositorio {
         const extension = archivo.name.split(".").pop()?.toLowerCase() || "png";
         const ruta = `logo-${Date.now()}.${extension}`;
         const { error } = await db.storage.from("logos").upload(ruta, archivo, { contentType: archivo.type });
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(mensajeError(error));
         return db.storage.from("logos").getPublicUrl(ruta).data.publicUrl;
       },
     },

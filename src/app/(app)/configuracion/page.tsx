@@ -2,6 +2,7 @@
 
 import { Plus, Trash2, Upload } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { Logo } from "@/components/logo";
 import { Boton, Campo, Encabezado, Entrada, Selector, SinAcceso, Tarjeta } from "@/components/ui";
 import { acceso } from "@/lib/permisos";
@@ -23,7 +24,9 @@ export default function Configuracion() {
   const [nuevo, setNuevo] = useState({ dia: "Domingo", hora: "18:00", tipo: "" });
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [subiendo, setSubiendo] = useState(false);
+  const [guardando, setGuardando] = useState(false);
   const archivo = useRef<HTMLInputElement>(null);
+  const { confirmar, notificar } = useConfirmacion();
   if (contacto.id !== sede.id) setContacto(sede);
 
   const permiso = acceso(usuario!.rol, "configuracion");
@@ -34,11 +37,13 @@ export default function Configuracion() {
 
   const guardar = async () => {
     const { id, ...datosSede } = contacto;
+    setGuardando(true);
     const fallo = await intentar(async () => {
       await repo.configuracion.guardar(general);
       await repo.sedes.editar(id, { ...datosSede, nombre: sede.nombre });
       await recargar();
     });
+    setGuardando(false);
     avisar(fallo, "Cambios guardados.");
   };
 
@@ -66,9 +71,17 @@ export default function Configuracion() {
     recargarHorarios();
   };
 
-  const quitarHorario = async (id: string) => {
-    const fallo = await intentar(() => repo.horarios.eliminar(id));
+  // El horario se borra de verdad, así que se confirma antes
+  const quitarHorario = async (h: Horario) => {
+    const seguro = await confirmar({
+      titulo: "Quitar horario",
+      mensaje: <>¿Quitar el horario <b>{h.dia} · {h.hora} · {h.tipo}</b>? Esta acción no se puede deshacer.</>,
+      accion: "Quitar",
+    });
+    if (!seguro) return;
+    const fallo = await intentar(() => repo.horarios.eliminar(h.id));
     if (fallo) return avisar(fallo, "");
+    notificar("Se quitó el horario.");
     recargarHorarios();
   };
 
@@ -77,7 +90,7 @@ export default function Configuracion() {
       <Encabezado
         titulo="Configuración"
         descripcion="Información institucional y de la sede activa"
-        acciones={!soloLectura && <Boton onClick={guardar}>Guardar cambios</Boton>}
+        acciones={!soloLectura && <Boton cargando={guardando} onClick={guardar}>Guardar cambios</Boton>}
       />
       {mensaje && (
         <p className={`mb-4 rounded-lg px-3 py-2 text-sm ${mensaje.ok ? "bg-olivo-50 text-olivo-700" : "bg-red-50 text-red-700"}`}>{mensaje.texto}</p>
@@ -114,7 +127,7 @@ export default function Configuracion() {
               <li key={h.id} className="flex items-center justify-between px-3 py-2 text-sm">
                 <span><strong>{h.dia}</strong> · {h.hora} · {h.tipo}</span>
                 {!soloLectura && (
-                  <button type="button" aria-label="Quitar horario" className="text-piedra-400 hover:text-red-600" onClick={() => quitarHorario(h.id)}>
+                  <button type="button" aria-label="Quitar horario" title="Quitar horario" className="text-piedra-400 hover:text-red-600" onClick={() => quitarHorario(h)}>
                     <Trash2 size={15} />
                   </button>
                 )}
@@ -129,7 +142,8 @@ export default function Configuracion() {
               </Selector>
               <Entrada type="time" value={nuevo.hora} onChange={(e) => setNuevo({ ...nuevo, hora: e.target.value })} />
               <Entrada placeholder="Tipo de reunión" value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value })} />
-              <Boton type="button" onClick={agregarHorario}><Plus size={16} /> Agregar</Boton>
+              {/* Sin tipo de reunión no hay horario que agregar */}
+              <Boton type="button" disabled={!nuevo.tipo.trim()} onClick={agregarHorario}><Plus size={16} /> Agregar</Boton>
             </div>
           )}
         </Tarjeta>

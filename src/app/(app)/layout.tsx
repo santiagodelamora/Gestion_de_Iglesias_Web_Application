@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ProveedorConfirmacion } from "@/components/confirmacion";
 import { Logo } from "@/components/logo";
 import { Boton, Selector, Tarjeta } from "@/components/ui";
 import { nombreRol } from "@/lib/catalogos";
@@ -189,31 +190,33 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="fixed inset-y-0 hidden w-64 lg:block print:hidden">{barra}</aside>
-      {menuAbierto && (
-        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMenuAbierto(false)}>
-          <div className="absolute inset-0 animate-aparecer bg-piedra-950/45" />
-          <aside className="absolute inset-y-0 w-72 animate-deslizar shadow-2xl" onClick={(e) => e.stopPropagation()}>{barra}</aside>
+    <ProveedorConfirmacion>
+      <div className="flex min-h-screen">
+        <aside className="fixed inset-y-0 hidden w-64 lg:block print:hidden">{barra}</aside>
+        {menuAbierto && (
+          <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMenuAbierto(false)}>
+            <div className="absolute inset-0 animate-aparecer bg-piedra-950/45" />
+            <aside className="absolute inset-y-0 w-72 animate-deslizar shadow-2xl" onClick={(e) => e.stopPropagation()}>{barra}</aside>
+          </div>
+        )}
+        <div className="min-w-0 flex-1 lg:pl-64 print:pl-0">
+          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-piedra-200 bg-white/90 px-4 py-2.5 backdrop-blur lg:hidden print:hidden">
+            <button
+              className="rounded-md p-1.5 text-piedra-600 hover:bg-piedra-100"
+              onClick={() => setMenuAbierto(true)}
+              aria-label="Abrir menú"
+            >
+              <Menu size={20} />
+            </button>
+            <p className="min-w-0 truncate font-titulo text-lg font-medium text-piedra-900">{db.configuracion.nombre}</p>
+          </header>
+          {/* La clave repite la entrada suave en cada cambio de página */}
+          <main key={ruta} className="mx-auto max-w-7xl animate-entrar px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+            {children}
+          </main>
         </div>
-      )}
-      <div className="min-w-0 flex-1 lg:pl-64 print:pl-0">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-piedra-200 bg-white/90 px-4 py-2.5 backdrop-blur lg:hidden print:hidden">
-          <button
-            className="rounded-md p-1.5 text-piedra-600 hover:bg-piedra-100"
-            onClick={() => setMenuAbierto(true)}
-            aria-label="Abrir menú"
-          >
-            <Menu size={20} />
-          </button>
-          <p className="min-w-0 truncate font-titulo text-lg font-medium text-piedra-900">{db.configuracion.nombre}</p>
-        </header>
-        {/* La clave repite la entrada suave en cada cambio de página */}
-        <main key={ruta} className="mx-auto max-w-7xl animate-entrar px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
-          {children}
-        </main>
       </div>
-    </div>
+    </ProveedorConfirmacion>
   );
 }
 

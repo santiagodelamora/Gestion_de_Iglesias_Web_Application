@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PantallaAcceso } from "@/components/pantalla-acceso";
-import { Boton, Campo, Entrada } from "@/components/ui";
+import { Boton, Campo, EntradaContrasena } from "@/components/ui";
 import { useDatos } from "@/lib/store";
 import { supabaseNavegador } from "@/lib/supabase/cliente";
 
@@ -62,14 +62,15 @@ export default function Restablecer() {
         <p className="text-sm text-piedra-600">Validando el enlace… Si no avanza, el enlace pudo haber expirado: solicita uno nuevo desde la pantalla de inicio de sesión.</p>
       ) : (
         <form onSubmit={guardar} className="space-y-4">
+          {/* Mismo campo con botón de ojo que en el inicio de sesión y el registro */}
           <Campo etiqueta="Nueva contraseña">
-            <Entrada type="password" autoComplete="new-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+            <EntradaContrasena autoComplete="new-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
           </Campo>
           <Campo etiqueta="Confirmar contraseña">
-            <Entrada type="password" autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
+            <EntradaContrasena autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
           </Campo>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <Boton type="submit" className="w-full py-2.5" disabled={guardando}>Guardar y entrar</Boton>
+          <Boton type="submit" className="w-full py-2.5" cargando={guardando}>{guardando ? "Guardando…" : "Guardar y entrar"}</Boton>
         </form>
       )}
     </PantallaAcceso>

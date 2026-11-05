@@ -2,6 +2,7 @@
 
 import { Pencil, Plus } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { nombreRol, ROLES } from "@/lib/catalogos";
 import { acceso } from "@/lib/permisos";
@@ -19,6 +20,7 @@ export default function Usuarios() {
   const [errorForm, setErrorForm] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
+  const { confirmar } = useConfirmacion();
 
   const permiso = acceso(usuario!.rol, "usuarios");
   if (!permiso) return <SinAcceso />;
@@ -43,9 +45,21 @@ export default function Usuarios() {
     });
   };
 
-  const guardarEdicion = () => {
+  const guardarEdicion = async () => {
     if (!editando) return;
     const { rol, sedeId: sede, activo, miembroId } = editando;
+    // Bloquear una cuenta activa deja a la persona sin acceso: se confirma antes
+    const estabaActiva = usuarios.find((u) => u.id === editando.id)?.activo;
+    if (
+      estabaActiva &&
+      !activo &&
+      !(await confirmar({
+        titulo: "Bloquear acceso",
+        mensaje: <><b>{editando.nombre}</b> no podrá iniciar sesión hasta que vuelvas a marcar su cuenta como activa.</>,
+        accion: "Bloquear acceso",
+      }))
+    )
+      return;
     ejecutar(() => repo.usuarios.editar(editando.id, { rol, sedeId: sede, activo, miembroId }), () => setEditando(null));
   };
 
@@ -80,7 +94,7 @@ export default function Usuarios() {
                 {puedeEditar && (
                   <td className={`${td} text-right`}>
                     {u.id !== usuario!.id && (
-                      <Boton variante="fantasma" aria-label="Editar" onClick={() => { setErrorForm(""); setEditando({ ...u, sedeId: u.sedeId ?? db.sedes[0]?.id ?? null }); }}><Pencil size={15} /></Boton>
+                      <Boton variante="fantasma" aria-label={`Editar a ${u.nombre}`} title="Editar" onClick={() => { setErrorForm(""); setEditando({ ...u, sedeId: u.sedeId ?? db.sedes[0]?.id ?? null }); }}><Pencil size={15} /></Boton>
                     )}
                   </td>
                 )}
@@ -95,7 +109,7 @@ export default function Usuarios() {
         titulo="Invitar usuario"
         abierto={!!nuevo}
         alCerrar={() => setNuevo(null)}
-        pie={<><Boton variante="secundario" onClick={() => setNuevo(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={invitar}>Enviar invitación</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setNuevo(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={invitar}>Enviar invitación</Boton></>}
       >
         {nuevo && (
           <>
@@ -113,7 +127,7 @@ export default function Usuarios() {
         titulo={`Editar ${editando?.nombre ?? ""}`}
         abierto={!!editando}
         alCerrar={() => setEditando(null)}
-        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={guardarEdicion}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardarEdicion}>Guardar</Boton></>}
       >
         {editando && (
           <>

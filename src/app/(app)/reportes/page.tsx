@@ -46,7 +46,7 @@ export default function Reportes() {
   }, [repo, sedeId, rol]);
   const { datos, cargando, error } = useCarga<Datos>(cargar, { miembros: [], eventos: [], ministerios: [], asistencias: [], aportaciones: [] });
   const { miembros, eventos, ministerios, asistencias, aportaciones } = datos;
-  const [exportando, setExportando] = useState(false);
+  const [exportando, setExportando] = useState<"excel" | "pdf" | null>(null);
   const [errorExportar, setErrorExportar] = useState("");
   const [tipo, setTipo] = useState(permitidos[0]);
   const hace3Meses = useMemo(() => {
@@ -132,9 +132,9 @@ export default function Reportes() {
     ...reporte,
   };
   const exportar = async (formato: "excel" | "pdf") => {
-    setExportando(true);
+    setExportando(formato);
     setErrorExportar(await intentar(() => (formato === "excel" ? exportarExcel(completo) : exportarPdf(completo))));
-    setExportando(false);
+    setExportando(null);
   };
   const mostrar = (i: number, v: Valor) => (reporte.moneda?.includes(i) ? mxn(Number(v)) : v);
 
@@ -146,11 +146,12 @@ export default function Reportes() {
           descripcion={`Información de ${sede?.nombre ?? ""}`}
           acciones={
             <>
-              <Boton variante="secundario" disabled={exportando || cargando} onClick={() => exportar("excel")}>
-                <FileSpreadsheet size={16} /> Exportar a Excel
+              {/* El spinner reemplaza al icono del formato que se está generando */}
+              <Boton variante="secundario" disabled={!!exportando || cargando} cargando={exportando === "excel"} onClick={() => exportar("excel")}>
+                {exportando !== "excel" && <FileSpreadsheet size={16} />} Exportar a Excel
               </Boton>
-              <Boton variante="secundario" disabled={exportando || cargando} onClick={() => exportar("pdf")}>
-                <FileText size={16} /> Exportar a PDF
+              <Boton variante="secundario" disabled={!!exportando || cargando} cargando={exportando === "pdf"} onClick={() => exportar("pdf")}>
+                {exportando !== "pdf" && <FileText size={16} />} Exportar a PDF
               </Boton>
             </>
           }

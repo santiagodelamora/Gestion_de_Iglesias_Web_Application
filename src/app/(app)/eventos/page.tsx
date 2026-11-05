@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { AreaTexto, Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tarjeta } from "@/components/ui";
 import { TIPOS_EVENTO } from "@/lib/catalogos";
 import { iso } from "@/lib/datos-ejemplo";
@@ -39,6 +40,8 @@ export default function Eventos() {
   const [errorForm, setErrorForm] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [procesando, setProcesando] = useState(false);
+  const { confirmar, notificar } = useConfirmacion();
 
   const permiso = acceso(usuario!.rol, "eventos");
   const idsMios = new Set(misMinisterios.map((m) => m.id));
@@ -99,11 +102,32 @@ export default function Eventos() {
     recargar();
   };
 
-  // Los eventos no se borran: se cancelan y pueden reactivarse
+  // Los eventos no se borran: se cancelan y pueden reactivarse. Cancelar se
+  // confirma antes porque el evento deja de admitir que se pase lista.
   const alternarCancelado = async (e: Evento) => {
+    if (
+      !e.cancelado &&
+      !(await confirmar({
+        titulo: "Cancelar evento",
+        mensaje: (
+          <>
+            ¿Cancelar <b>{e.titulo}</b> del {fechaLarga(e.fecha).toLowerCase()} a las {e.hora}? Se mostrará tachado en el calendario y
+            no se podrá pasar lista. Podrás reactivarlo después.
+          </>
+        ),
+        accion: "Cancelar evento",
+        cancelar: "Mantener evento",
+      }))
+    )
+      return;
+    setProcesando(true);
     const fallo = await intentar(() => repo.eventos.cambiarCancelado(e.id, !e.cancelado));
+    setProcesando(false);
     setErrorAccion(fallo);
-    if (!fallo) setSeleccionado({ ...e, cancelado: !e.cancelado });
+    if (!fallo) {
+      setSeleccionado({ ...e, cancelado: !e.cancelado });
+      notificar(e.cancelado ? `Se reactivó «${e.titulo}».` : `Se canceló «${e.titulo}».`);
+    }
     recargar();
   };
 
@@ -123,9 +147,9 @@ export default function Eventos() {
         <div className="flex items-center justify-between border-b border-piedra-200 p-4">
           <h2 className="font-titulo text-2xl font-medium capitalize">{MESES[m - 1]} {a}</h2>
           <div className="flex gap-1">
-            <Boton variante="secundario" onClick={() => moverMes(-1)} aria-label="Mes anterior"><ChevronLeft size={16} /></Boton>
+            <Boton variante="secundario" onClick={() => moverMes(-1)} aria-label="Mes anterior" title="Mes anterior"><ChevronLeft size={16} /></Boton>
             <Boton variante="secundario" onClick={() => setMes(hoy.slice(0, 7))}>Hoy</Boton>
-            <Boton variante="secundario" onClick={() => moverMes(1)} aria-label="Mes siguiente"><ChevronRight size={16} /></Boton>
+            <Boton variante="secundario" onClick={() => moverMes(1)} aria-label="Mes siguiente" title="Mes siguiente"><ChevronRight size={16} /></Boton>
           </div>
         </div>
         <div className="grid grid-cols-7 border-b border-piedra-200 text-center text-xs font-semibold text-piedra-500">
@@ -172,7 +196,7 @@ export default function Eventos() {
         pie={
           seleccionado && puedeEditar(seleccionado) && (
             <>
-              <Boton variante={seleccionado.cancelado ? "secundario" : "peligro"} onClick={() => alternarCancelado(seleccionado)}>
+              <Boton variante={seleccionado.cancelado ? "secundario" : "peligro"} cargando={procesando} onClick={() => alternarCancelado(seleccionado)}>
                 {seleccionado.cancelado ? "Reactivar evento" : "Cancelar evento"}
               </Boton>
               <Boton onClick={() => abrirEdicion(seleccionado)}>Editar</Boton>
@@ -201,7 +225,7 @@ export default function Eventos() {
         titulo={editandoId ? "Editar evento" : "Nuevo evento"}
         abierto={!!form}
         alCerrar={() => setForm(null)}
-        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={guardar}>Guardar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Guardar</Boton></>}
       >
         {form && (
           <>

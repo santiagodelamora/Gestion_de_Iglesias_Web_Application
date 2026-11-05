@@ -2,6 +2,7 @@
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useConfirmacion } from "@/components/confirmacion";
 import { AreaTexto, Boton, Campo, Encabezado, Entrada, Etiqueta, Liston, Modal, Selector, SinAcceso, Tarjeta, Vacio } from "@/components/ui";
 import { fechaLarga } from "@/lib/formato";
 import { acceso } from "@/lib/permisos";
@@ -19,6 +20,7 @@ export default function Comunicados() {
   const [errorForm, setErrorForm] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const { confirmar, notificar } = useConfirmacion();
 
   const permiso = acceso(usuario!.rol, "comunicados");
   if (!permiso) return <SinAcceso />;
@@ -48,8 +50,17 @@ export default function Comunicados() {
     recargar();
   };
 
-  const eliminar = async (id: string) => {
-    setErrorAccion(await intentar(() => repo.anuncios.eliminar(id)));
+  // El anuncio se borra de verdad, así que se confirma antes
+  const eliminar = async (a: Anuncio) => {
+    const seguro = await confirmar({
+      titulo: "Eliminar anuncio",
+      mensaje: <>¿Eliminar <b>{a.titulo}</b>? Los miembros dejarán de verlo. Esta acción no se puede deshacer.</>,
+      accion: "Eliminar",
+    });
+    if (!seguro) return;
+    const fallo = await intentar(() => repo.anuncios.eliminar(a.id));
+    setErrorAccion(fallo);
+    if (!fallo) notificar("Se eliminó el anuncio.");
     recargar();
   };
 
@@ -85,10 +96,10 @@ export default function Comunicados() {
               </div>
               {administra(a) && (
                 <div className="flex gap-1">
-                  <Boton variante="fantasma" aria-label="Editar" onClick={() => abrir({ titulo: a.titulo, contenido: a.contenido, fechaPublicacion: a.fechaPublicacion, importante: a.importante, sedeId: a.sedeId }, a.id)}>
+                  <Boton variante="fantasma" aria-label="Editar" title="Editar" onClick={() => abrir({ titulo: a.titulo, contenido: a.contenido, fechaPublicacion: a.fechaPublicacion, importante: a.importante, sedeId: a.sedeId }, a.id)}>
                     <Pencil size={15} />
                   </Boton>
-                  <Boton variante="fantasma" aria-label="Eliminar" className="hover:text-red-600" onClick={() => eliminar(a.id)}>
+                  <Boton variante="fantasma" aria-label="Eliminar" title="Eliminar" className="hover:text-red-600" onClick={() => eliminar(a)}>
                     <Trash2 size={15} />
                   </Boton>
                 </div>
@@ -103,7 +114,7 @@ export default function Comunicados() {
         titulo={editandoId ? "Editar anuncio" : "Nuevo anuncio"}
         abierto={!!form}
         alCerrar={() => setForm(null)}
-        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton disabled={guardando} onClick={guardar}>Publicar</Boton></>}
+        pie={<><Boton variante="secundario" onClick={() => setForm(null)}>Cancelar</Boton><Boton cargando={guardando} onClick={guardar}>Publicar</Boton></>}
       >
         {form && (
           <>
