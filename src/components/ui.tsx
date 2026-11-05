@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox, Lock, X } from "lucide-react";
+import { Eye, EyeOff, Inbox, Lock, X } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 
 // Componentes básicos de interfaz compartidos por todos los módulos.
@@ -42,6 +42,26 @@ const campo =
 
 export function Entrada({ className, ...p }: ComponentProps<"input">) {
   return <input className={unir(campo, className)} {...p} />;
+}
+
+// Campo de contraseña con un botón de ojo para mostrar u ocultar lo escrito
+export function EntradaContrasena({ className, ...p }: Omit<ComponentProps<"input">, "type">) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input type={visible ? "text" : "password"} className={unir(campo, "pr-10", className)} {...p} />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        aria-pressed={visible}
+        title={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-piedra-500 transition-colors hover:text-piedra-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marca-500"
+      >
+        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
 }
 
 export function AreaTexto({ className, ...p }: ComponentProps<"textarea">) {

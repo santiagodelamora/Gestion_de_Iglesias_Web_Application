@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PantallaAcceso } from "@/components/pantalla-acceso";
-import { Boton, Campo, Entrada } from "@/components/ui";
+import { Boton, Campo, Entrada, EntradaContrasena } from "@/components/ui";
 import { useDatos } from "@/lib/store";
 
 type Vista = "entrar" | "recuperar" | "registrar";
@@ -97,10 +97,10 @@ export default function Login() {
             </Campo>
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo etiqueta="Contraseña">
-                <Entrada type="password" autoComplete="new-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} placeholder="Mínimo 8 caracteres" />
+                <EntradaContrasena autoComplete="new-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} placeholder="Mínimo 8 caracteres" />
               </Campo>
               <Campo etiqueta="Confirmar contraseña">
-                <Entrada type="password" autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
+                <EntradaContrasena autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
               </Campo>
             </div>
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -117,7 +117,7 @@ export default function Login() {
             <Entrada type="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="nombre@correo.mx" />
           </Campo>
           <Campo etiqueta="Contraseña">
-            <Entrada type="password" autoComplete="current-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+            <EntradaContrasena autoComplete="current-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
           </Campo>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <Boton type="submit" className="w-full py-2.5" disabled={enviando}>{enviando ? "Entrando…" : "Iniciar sesión"}</Boton>
