@@ -18,13 +18,19 @@ Vercel aloja aplicaciones Next.js gratis para proyectos personales y académicos
 
 Antes de presionar **Deploy**, abre **Environment Variables** y agrega las tres que están en tu `.env.local`:
 
-| Nombre | Valor |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | La **Project URL** de Supabase (`https://xxxxxxxx.supabase.co`) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | La llave pública (`sb_publishable_…`) |
-| `SUPABASE_SERVICE_ROLE_KEY` | La llave secreta (`sb_secret_…`) |
+| Nombre | Valor | Tipo |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | La **Project URL** de Supabase (`https://xxxxxxxx.supabase.co`) | Config |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | La llave pública (`sb_publishable_…`) | Config |
+| `SUPABASE_SERVICE_ROLE_KEY` | La llave secreta (`sb_secret_…`) | Secret |
 
-La llave secreta solo se usa en el servidor de Vercel para enviar invitaciones. Nunca llega al navegador de los usuarios.
+En cada línea de `.env.local`, el valor es todo lo que va después del `=`.
+
+Vercel no deja guardar como **Secret** una variable que empieza con `NEXT_PUBLIC_`, porque ese prefijo hace que el valor llegue al navegador. Las dos primeras son públicas a propósito: lo que protege los datos son las políticas RLS de Supabase. Una variable **Secret** ya guardada no se puede cambiar a **Config**; hay que borrarla y crearla de nuevo.
+
+La llave secreta solo se usa en el servidor de Vercel para enviar invitaciones. Nunca llega al navegador de los usuarios. Nunca le pongas el prefijo `NEXT_PUBLIC_`.
+
+No conectes Supabase desde la pestaña **Storage** de Vercel ni desde su Agent. Eso crea una base de datos nueva y vacía, reemplaza estas tres variables y ata cada deploy a esa integración.
 
 Presiona **Deploy**. En uno o dos minutos Vercel te da una dirección como `https://gestion-iglesias.vercel.app`.
 
@@ -46,3 +52,5 @@ Los correos de invitación y de recuperación de contraseña deben llevar a la d
 - **La página dice "modo demostración":** faltan las variables de entorno. Agrégalas en **Settings → Environment Variables** y vuelve a publicar desde **Deployments → Redeploy**.
 - **Las invitaciones fallan con "Falta configurar SUPABASE_SERVICE_ROLE_KEY":** falta la llave secreta en Vercel, o tiene un error de copia.
 - **El enlace del correo lleva a localhost:** revisa el paso 3.
+- **GitHub marca ❌ en el commit y Vercel dice "One or more integration resources failed to provision for this deployment":** hay una base de datos del Marketplace de Vercel conectada al proyecto y está suspendida. En **Storage**, abre la base de datos, quita la conexión con el proyecto (no la borres) y vuelve a escribir las tres variables del paso 2 con los valores de tu `.env.local`. Después usa **Redeploy**.
+- **La app no carga datos aunque el deploy está bien:** Supabase pausa los proyectos gratuitos que pasan unos 7 días sin uso. Quien sea dueño del proyecto en Supabase lo reactiva con **Restore**.
