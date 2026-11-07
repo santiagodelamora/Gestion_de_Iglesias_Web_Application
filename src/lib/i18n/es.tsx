@@ -116,6 +116,11 @@ export const es = {
     sinAccesoTexto: "Tu rol no tiene permiso para ver esta información.",
     logotipo: "Logotipo",
     cerrarAviso: "Cerrar aviso",
+    salidaTitulo: "Cambios sin guardar",
+    salidaMensaje: "Hiciste cambios en esta página que todavía no se guardan. ¿Quieres guardarlos antes de continuar?",
+    salidaGuardar: "Guardar y continuar",
+    salidaDescartar: "Descartar cambios",
+    salidaSeguir: "Seguir editando",
   },
 
   menu: {

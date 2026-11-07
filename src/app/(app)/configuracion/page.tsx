@@ -2,7 +2,7 @@
 
 import { Languages, Plus, Trash2, Upload } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { useConfirmacion } from "@/components/confirmacion";
+import { useCambiosSinGuardar, useConfirmacion } from "@/components/confirmacion";
 import { Logo } from "@/components/logo";
 import { Boton, Campo, Encabezado, Entrada, Selector, SinAcceso, Tarjeta } from "@/components/ui";
 import { IDIOMAS, textos, useIdioma, type Idioma } from "@/lib/i18n";
@@ -14,6 +14,9 @@ import { intentar, useCarga } from "@/lib/usar-carga";
 
 // Valores que se guardan; lo que se muestra sale de t.catalogos.dias
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+// Un campo vacío puede venir como "" o null según el origen
+const distinto = (a?: string | null, b?: string | null) => (a ?? "") !== (b ?? "");
 
 export default function Configuracion() {
   const { db, usuario, repo, recargar, sedeId } = useDatos();
@@ -35,8 +38,15 @@ export default function Configuracion() {
   if (contacto.id !== sede.id) setContacto(sede);
 
   const permiso = acceso(usuario!.rol, "configuracion");
-  if (!permiso) return <SinAcceso />;
-  const soloLectura = permiso !== "total";
+
+  // Lo escrito difiere de lo guardado. El logotipo y los horarios se guardan al
+  // momento, así que no cuentan.
+  const hayCambios =
+    distinto(general.nombre, db.configuracion.nombre) ||
+    distinto(general.lema, db.configuracion.lema) ||
+    distinto(contacto.direccion, sede.direccion) ||
+    distinto(contacto.telefono, sede.telefono) ||
+    distinto(contacto.correo, sede.correo);
 
   const avisar = (fallo: string, exito: string) => setMensaje(fallo ? { ok: false, texto: fallo } : { ok: true, texto: exito });
 
@@ -50,7 +60,14 @@ export default function Configuracion() {
     });
     setGuardando(false);
     avisar(fallo, tcf.guardados);
+    return !fallo;
   };
+
+  // Salir de la página con cambios pendientes pregunta antes si se guardan
+  useCambiosSinGuardar(hayCambios, guardar);
+
+  if (!permiso) return <SinAcceso />;
+  const soloLectura = permiso !== "total";
 
   const subirLogo = async (f: File | undefined) => {
     if (!f) return;

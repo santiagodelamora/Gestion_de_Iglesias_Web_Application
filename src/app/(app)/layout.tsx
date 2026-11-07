@@ -19,7 +19,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ProveedorConfirmacion } from "@/components/confirmacion";
+import { ProveedorConfirmacion, useConfirmacion } from "@/components/confirmacion";
 import { Logo } from "@/components/logo";
 import { Boton, Selector, Tarjeta } from "@/components/ui";
 import { useIdioma, type Textos } from "@/lib/i18n";
@@ -65,12 +65,23 @@ const iniciales = (nombre: string) =>
     .map((p) => p[0].toUpperCase())
     .join("");
 
+// El proveedor envuelve también el menú: así puede preguntar antes de dejar una
+// página con cambios sin guardar
 export default function LayoutApp({ children }: { children: React.ReactNode }) {
+  return (
+    <ProveedorConfirmacion>
+      <Marco>{children}</Marco>
+    </ProveedorConfirmacion>
+  );
+}
+
+function Marco({ children }: { children: React.ReactNode }) {
   const { usuario, db, sedeId, cambiarSede, cerrarSesion } = useDatos();
   const router = useRouter();
   const ruta = usePathname();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const { t } = useIdioma();
+  const { cambiosPendientes, preguntarSalida } = useConfirmacion();
 
   useEffect(() => {
     if (!usuario) router.replace("/login");
@@ -82,6 +93,12 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
   const salir = async () => {
     await cerrarSesion();
     router.replace("/login");
+  };
+
+  // Si la página tiene cambios sin guardar, primero pregunta qué hacer con ellos
+  const tras = async (accion: () => void) => {
+    if (cambiosPendientes() && !(await preguntarSalida())) return;
+    accion();
   };
 
   // Cuenta creada pero todavía sin rol asignado por un administrador
@@ -124,7 +141,14 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
           <label className="relative mt-4 flex items-center">
             <Building2 size={15} className="pointer-events-none absolute left-3 text-piedra-400" />
             <span className="sr-only">{t.comun.sede}</span>
-            <Selector value={sedeId} onChange={(e) => cambiarSede(e.target.value)} className="py-1.5 pl-9">
+            <Selector
+              value={sedeId}
+              onChange={(e) => {
+                const nueva = e.target.value;
+                tras(() => cambiarSede(nueva));
+              }}
+              className="py-1.5 pl-9"
+            >
               {db.sedes.map((s) => (
                 <option key={s.id} value={s.id}>{s.nombre}</option>
               ))}
@@ -155,6 +179,12 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
                       <Link
                         href={e.href}
                         aria-current={activo ? "page" : undefined}
+                        onClick={(ev) => {
+                          // Ctrl, ⌘ o Mayús abren otra pestaña o ventana: esta página sigue igual
+                          if (activo || !cambiosPendientes() || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
+                          ev.preventDefault();
+                          tras(() => router.push(e.href));
+                        }}
                         className={`ml-7 mr-3 flex items-center gap-3 rounded-md px-3 py-2 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500 ${
                           activo ? "bg-marca-50 font-semibold text-marca-900" : "text-piedra-700 hover:bg-piedra-100 hover:text-piedra-900"
                         }`}
@@ -180,7 +210,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
           <p className="truncate text-xs text-piedra-500">{t.catalogos.roles[usuario.rol]}</p>
         </div>
         <button
-          onClick={salir}
+          onClick={() => tras(salir)}
           title={t.comun.cerrarSesion}
           aria-label={t.comun.cerrarSesion}
           className="rounded-md p-2 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-800"
@@ -192,7 +222,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ProveedorConfirmacion>
+    <>
       <div className="flex min-h-screen">
         <aside className="fixed inset-y-0 hidden w-64 lg:block print:hidden">{barra}</aside>
         {menuAbierto && (
@@ -218,7 +248,7 @@ export default function LayoutApp({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-    </ProveedorConfirmacion>
+    </>
   );
 }
 

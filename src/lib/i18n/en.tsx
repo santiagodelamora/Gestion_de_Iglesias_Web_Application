@@ -112,6 +112,11 @@ export const en: Textos = {
     sinAccesoTexto: "Your role doesn’t have permission to view this information.",
     logotipo: "Logo",
     cerrarAviso: "Dismiss notice",
+    salidaTitulo: "Unsaved changes",
+    salidaMensaje: "You made changes on this page that haven’t been saved yet. Do you want to save them before continuing?",
+    salidaGuardar: "Save and continue",
+    salidaDescartar: "Discard changes",
+    salidaSeguir: "Keep editing",
   },
 
   menu: {

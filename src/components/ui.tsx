@@ -216,7 +216,7 @@ export function Modal({
           </button>
         </div>
         <div className="space-y-4 px-6 py-5">{children}</div>
-        {pie && <div className="flex justify-end gap-2 rounded-b-xl border-t border-piedra-200 bg-piedra-50 px-6 py-3.5">{pie}</div>}
+        {pie && <div className="flex flex-wrap justify-end gap-2 rounded-b-xl border-t border-piedra-200 bg-piedra-50 px-6 py-3.5">{pie}</div>}
       </div>
     </div>
   );
