@@ -9,6 +9,7 @@ import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosInvitacion } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import type { Miembro, Rol, Usuario } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
 
@@ -40,11 +41,13 @@ export default function Usuarios() {
   };
 
   const invitar = () => {
-    if (!nuevo?.nombre.trim() || !nuevo.correo.trim()) return setErrorForm(tu.obligatorios);
-    const correo = nuevo.correo;
-    ejecutar(() => repo.usuarios.invitar(nuevo), () => {
+    if (!nuevo) return;
+    // Los textos se guardan sin espacios al principio ni al final
+    const datos = recortar(nuevo);
+    if (!datos.nombre || !datos.correo) return setErrorForm(tu.obligatorios);
+    ejecutar(() => repo.usuarios.invitar(datos), () => {
       setNuevo(null);
-      setAviso(modo === "demo" ? tu.creadoDemo : tu.invitacionEnviada(correo));
+      setAviso(modo === "demo" ? tu.creadoDemo : tu.invitacionEnviada(datos.correo));
     });
   };
 

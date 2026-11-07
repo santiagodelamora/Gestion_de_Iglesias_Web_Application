@@ -26,10 +26,12 @@ export async function invitarUsuario(datos: DatosInvitacion, idioma: Idioma = "e
     return { error: t.usuarios.faltaLlave };
   }
 
+  // La acción se puede llamar sin pasar por el formulario: se recorta aquí también
   const correo = datos.correo.trim().toLowerCase();
+  const nombre = datos.nombre.trim();
   const origen = (await headers()).get("origin") ?? "";
   const { data, error } = await admin.auth.admin.inviteUserByEmail(correo, {
-    data: { nombre: datos.nombre },
+    data: { nombre },
     redirectTo: `${origen}/restablecer`,
   });
   if (error) {
@@ -39,7 +41,7 @@ export async function invitarUsuario(datos: DatosInvitacion, idioma: Idioma = "e
   // El trigger creó el perfil inactivo; aquí se le asignan rol y sede
   const { error: errorPerfil } = await admin
     .from("usuarios")
-    .update({ nombre: datos.nombre, rol: datos.rol, sede_id: datos.sedeId, miembro_id: datos.miembroId ?? null, activo: true })
+    .update({ nombre, rol: datos.rol, sede_id: datos.sedeId, miembro_id: datos.miembroId ?? null, activo: true })
     .eq("id", data.user.id);
   if (errorPerfil) return { error: errorPerfil.message };
   return {};

@@ -7,6 +7,7 @@ import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosSede } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import { intentar } from "@/lib/usar-carga";
 
 export default function Sedes() {
@@ -27,9 +28,12 @@ export default function Sedes() {
   };
 
   const guardar = async () => {
-    if (!form?.nombre.trim()) return setError(t.comun.nombreObligatorio);
+    if (!form) return;
+    // Los textos se guardan sin espacios al principio ni al final
+    const datos = recortar(form);
+    if (!datos.nombre) return setError(t.comun.nombreObligatorio);
     setGuardando(true);
-    const fallo = await intentar(() => (editandoId ? repo.sedes.editar(editandoId, form) : repo.sedes.crear(form)));
+    const fallo = await intentar(() => (editandoId ? repo.sedes.editar(editandoId, datos) : repo.sedes.crear(datos)));
     if (!fallo) await recargar();
     setGuardando(false);
     if (fallo) return setError(fallo);

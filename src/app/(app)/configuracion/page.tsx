@@ -9,14 +9,16 @@ import { IDIOMAS, textos, useIdioma, type Idioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosSede } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import type { Horario } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
 
 // Valores que se guardan; lo que se muestra sale de t.catalogos.dias
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
-// Un campo vacío puede venir como "" o null según el origen
-const distinto = (a?: string | null, b?: string | null) => (a ?? "") !== (b ?? "");
+// Un campo vacío puede venir como "" o null según el origen. Los espacios al
+// principio y al final no cuentan como cambio porque no se guardan.
+const distinto = (a?: string | null, b?: string | null) => (a ?? "").trim() !== (b ?? "").trim();
 
 export default function Configuracion() {
   const { db, usuario, repo, recargar, sedeId } = useDatos();
@@ -51,14 +53,21 @@ export default function Configuracion() {
   const avisar = (fallo: string, exito: string) => setMensaje(fallo ? { ok: false, texto: fallo } : { ok: true, texto: exito });
 
   const guardar = async () => {
-    const { id, ...datosSede } = contacto;
+    // Los textos se guardan sin espacios al principio ni al final
+    const datosGeneral = recortar(general);
+    const { id, ...datosSede } = recortar(contacto);
     setGuardando(true);
     const fallo = await intentar(async () => {
-      await repo.configuracion.guardar(general);
+      await repo.configuracion.guardar(datosGeneral);
       await repo.sedes.editar(id, { ...datosSede, nombre: sede.nombre });
       await recargar();
     });
     setGuardando(false);
+    if (!fallo) {
+      // Los campos muestran lo que quedó guardado
+      setGeneral(datosGeneral);
+      setContacto({ id, ...datosSede });
+    }
     avisar(fallo, tcf.guardados);
     return !fallo;
   };
@@ -76,7 +85,7 @@ export default function Configuracion() {
     setSubiendo(true);
     const fallo = await intentar(async () => {
       const logoUrl = await repo.configuracion.subirLogo(f);
-      const nueva = { ...general, logoUrl };
+      const nueva = recortar({ ...general, logoUrl });
       await repo.configuracion.guardar(nueva);
       setGeneral(nueva);
       await recargar();
@@ -87,7 +96,7 @@ export default function Configuracion() {
 
   const agregarHorario = async () => {
     if (!nuevo.tipo.trim()) return;
-    const fallo = await intentar(() => repo.horarios.crear(sedeId, nuevo));
+    const fallo = await intentar(() => repo.horarios.crear(sedeId, recortar(nuevo)));
     if (fallo) return avisar(fallo, "");
     setNuevo({ ...nuevo, tipo: "" });
     recargarHorarios();

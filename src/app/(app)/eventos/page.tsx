@@ -10,6 +10,7 @@ import { aFecha, fechaLarga } from "@/lib/formato";
 import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import type { Evento, Miembro, Ministerio, TipoEvento } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
 
@@ -93,10 +94,12 @@ export default function Eventos() {
 
   const guardar = async () => {
     if (!form) return;
-    if (!form.titulo.trim()) return setErrorForm(t.comun.tituloObligatorio);
-    if (!form.fecha || !form.hora) return setErrorForm(te.indicaFechaHora);
+    // Los textos se guardan sin espacios al principio ni al final
+    const datos = recortar(form);
+    if (!datos.titulo) return setErrorForm(t.comun.tituloObligatorio);
+    if (!datos.fecha || !datos.hora) return setErrorForm(te.indicaFechaHora);
     setGuardando(true);
-    const fallo = await intentar(() => (editandoId ? repo.eventos.editar(editandoId, form) : repo.eventos.crear(sedeId, form)));
+    const fallo = await intentar(() => (editandoId ? repo.eventos.editar(editandoId, datos) : repo.eventos.crear(sedeId, datos)));
     setGuardando(false);
     if (fallo) return setErrorForm(fallo);
     setForm(null);
