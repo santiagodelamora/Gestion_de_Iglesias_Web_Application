@@ -46,6 +46,7 @@ export interface Repositorio {
     listar(): Promise<Usuario[]>;
     invitar(datos: DatosInvitacion): Promise<void>;
     editar(id: string, cambios: CambiosUsuario): Promise<void>;
+    eliminar(id: string): Promise<void>;
   };
   configuracion: {
     guardar(datos: ConfiguracionIglesia): Promise<void>;

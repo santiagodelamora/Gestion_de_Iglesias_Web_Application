@@ -462,10 +462,23 @@ export const es = {
       <><b>{nombre}</b> no podrá iniciar sesión hasta que vuelvas a marcar su cuenta como activa.</>
     ),
     bloquear: "Bloquear acceso",
-    // Respuestas de la acción del servidor que envía la invitación
-    soloAdmin: "Solo un administrador puede crear usuarios.",
-    faltaLlave: "Falta configurar SUPABASE_SERVICE_ROLE_KEY en el servidor para enviar invitaciones.",
+    eliminar: "Eliminar cuenta",
+    eliminarA: (nombre: string) => `Eliminar la cuenta de ${nombre}`,
+    eliminarTitulo: "Eliminar cuenta",
+    eliminarMensaje: (nombre: string, correo: string) => (
+      <>
+        ¿Eliminar la cuenta de <b>{nombre}</b> ({correo})? Ya no podrá iniciar sesión y el correo quedará libre para
+        invitarlo de nuevo. Lo que registró (aportaciones, asistencia y anuncios) se conserva. Esta acción no se puede
+        deshacer; si solo quieres quitarle el acceso por un tiempo, bloquea la cuenta desde Editar.
+      </>
+    ),
+    eliminado: (nombre: string) => `Se eliminó la cuenta de ${nombre}.`,
+    // Respuestas de las acciones del servidor que invitan y eliminan cuentas
+    soloAdmin: "Solo un administrador puede crear o eliminar usuarios.",
+    faltaLlave: "Falta configurar SUPABASE_SERVICE_ROLE_KEY en el servidor para invitar o eliminar usuarios.",
     cuentaExiste: "Ya existe una cuenta con ese correo.",
+    noEliminarPropia: "No puedes eliminar tu propia cuenta.",
+    noExiste: "La cuenta ya no existe.",
   },
 
   sedes: {

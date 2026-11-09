@@ -456,9 +456,22 @@ export const en: Textos = {
       <><b>{nombre}</b> won’t be able to sign in until you mark their account as active again.</>
     ),
     bloquear: "Block access",
-    soloAdmin: "Only an administrator can create users.",
-    faltaLlave: "SUPABASE_SERVICE_ROLE_KEY must be configured on the server to send invitations.",
+    eliminar: "Delete account",
+    eliminarA: (nombre) => `Delete ${nombre}’s account`,
+    eliminarTitulo: "Delete account",
+    eliminarMensaje: (nombre, correo) => (
+      <>
+        Delete <b>{nombre}</b>’s account ({correo})? They won’t be able to sign in and the email will be free to invite
+        again. What they recorded (donations, attendance and announcements) is kept. This can’t be undone; if you only
+        want to remove their access for a while, block the account from Edit.
+      </>
+    ),
+    eliminado: (nombre) => `${nombre}’s account was deleted.`,
+    soloAdmin: "Only an administrator can create or delete users.",
+    faltaLlave: "SUPABASE_SERVICE_ROLE_KEY must be configured on the server to invite or delete users.",
     cuentaExiste: "An account with that email already exists.",
+    noEliminarPropia: "You can’t delete your own account.",
+    noExiste: "That account no longer exists.",
   },
 
   sedes: {

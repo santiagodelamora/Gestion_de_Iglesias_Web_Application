@@ -33,7 +33,7 @@ Mientras no exista el administrador, nadie más debe poder registrarse: la prime
 
 Con el registro cerrado, las cuentas solo se crean por invitación desde **Usuarios**.
 
-**Para usar el botón "Crear cuenta" del inicio de sesión**, vuelve a activar **Allow new users to sign up** después de crear el administrador (paso 5) y deja encendido **Confirm email**. Cada cuenta creada así nace como Miembro, **inactiva y sin sede**: no ve nada hasta que un administrador, en **Usuarios**, le asigna rol y sede y la activa. El riesgo es que cualquiera puede llenar la lista de pendientes con cuentas falsas; el correo gratuito de Supabase además envía pocos correos por hora.
+**Para usar el botón "Crear cuenta" del inicio de sesión**, vuelve a activar **Allow new users to sign up** después de crear el administrador (paso 5) y deja encendido **Confirm email**. Cada cuenta creada así nace como Miembro, **inactiva y sin sede**: no ve nada hasta que un administrador, en **Usuarios**, le asigna rol y sede y la activa. El riesgo es que cualquiera puede llenar la lista de pendientes con cuentas falsas (el administrador las borra con el botón de eliminar de cada fila); el correo gratuito de Supabase además envía pocos correos por hora.
 
 ## 4. Direcciones de la aplicación
 
@@ -76,6 +76,11 @@ En **Registro de miembro vinculado** elige a qué miembro corresponde la cuenta.
 
 - **Coordinador:** el sistema sabe qué ministerio coordina por este vínculo (el coordinador de cada ministerio se elige en *Ministerios*).
 - **Miembro:** así la persona ve su propio registro.
+
+Para quitarle el acceso a alguien hay dos opciones en cada fila de **Usuarios**:
+
+- **Editar → desmarcar Cuenta activa:** bloquea el inicio de sesión y se puede revertir.
+- **Eliminar cuenta (bote de basura):** borra la cuenta de Supabase y libera el correo para invitarlo otra vez. No se puede deshacer. Las aportaciones, la asistencia y los anuncios que registró se conservan; los anuncios siguen mostrando su nombre. Nadie puede eliminar su propia cuenta, así que siempre queda al menos un administrador.
 
 El servicio de correo incluido en Supabase solo envía unos pocos correos por hora. Para un proyecto académico alcanza; si necesitas más, configura un SMTP propio en **Project Settings → Authentication → SMTP Settings**.
 
