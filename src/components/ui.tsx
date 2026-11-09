@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff, Inbox, LoaderCircle, Lock, X } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useIdioma } from "@/lib/i18n";
 
 // Componentes básicos de interfaz compartidos por todos los módulos.
@@ -191,7 +192,10 @@ export function Modal({
   }, [abierto]);
 
   if (!abierto) return null;
-  return (
+  // Se dibuja en <body>: el <main> de cada página tiene una animación con
+  // transform, y un ancestro con transform encierra a los elementos fixed (el
+  // fondo solo cubría el contenido y el diálogo quedaba cortado arriba).
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex animate-aparecer items-center justify-center bg-piedra-950/45 p-4"
       onClick={alCerrar}
@@ -218,7 +222,8 @@ export function Modal({
         <div className="space-y-4 px-6 py-5">{children}</div>
         {pie && <div className="flex flex-wrap justify-end gap-2 rounded-b-xl border-t border-piedra-200 bg-piedra-50 px-6 py-3.5">{pie}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
