@@ -9,6 +9,7 @@ import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosMiembro } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import type { Miembro } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
 
@@ -52,10 +53,12 @@ export default function Miembros() {
   };
 
   const guardar = async () => {
-    if (!form.nombre.trim()) return setErrorForm(t.comun.nombreObligatorio);
+    // Los textos se guardan sin espacios al principio ni al final
+    const datos = recortar(form);
+    if (!datos.nombre) return setErrorForm(t.comun.nombreObligatorio);
     setGuardando(true);
     const fallo = await intentar(() =>
-      editando === "nuevo" ? repo.miembros.crear(sedeId, form) : repo.miembros.editar((editando as Miembro).id, form)
+      editando === "nuevo" ? repo.miembros.crear(sedeId, datos) : repo.miembros.editar((editando as Miembro).id, datos)
     );
     setGuardando(false);
     if (fallo) return setErrorForm(fallo);

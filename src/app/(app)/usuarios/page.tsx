@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Modal, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
@@ -9,6 +9,7 @@ import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosInvitacion } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import type { Miembro, Rol, Usuario } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
 
@@ -21,7 +22,9 @@ export default function Usuarios() {
   const [errorForm, setErrorForm] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
-  const { confirmar } = useConfirmacion();
+  const [errorAccion, setErrorAccion] = useState("");
+  const [eliminandoId, setEliminandoId] = useState<string | null>(null);
+  const { confirmar, notificar } = useConfirmacion();
   const { t } = useIdioma();
   const tu = t.usuarios;
 
@@ -40,11 +43,13 @@ export default function Usuarios() {
   };
 
   const invitar = () => {
-    if (!nuevo?.nombre.trim() || !nuevo.correo.trim()) return setErrorForm(tu.obligatorios);
-    const correo = nuevo.correo;
-    ejecutar(() => repo.usuarios.invitar(nuevo), () => {
+    if (!nuevo) return;
+    // Los textos se guardan sin espacios al principio ni al final
+    const datos = recortar(nuevo);
+    if (!datos.nombre || !datos.correo) return setErrorForm(tu.obligatorios);
+    ejecutar(() => repo.usuarios.invitar(datos), () => {
       setNuevo(null);
-      setAviso(modo === "demo" ? tu.creadoDemo : tu.invitacionEnviada(correo));
+      setAviso(modo === "demo" ? tu.creadoDemo : tu.invitacionEnviada(datos.correo));
     });
   };
 
@@ -66,6 +71,25 @@ export default function Usuarios() {
     ejecutar(() => repo.usuarios.editar(editando.id, { rol, sedeId: sede, activo, miembroId }), () => setEditando(null));
   };
 
+  // La cuenta se borra de verdad (no se puede deshacer), así que se confirma antes
+  const eliminar = async (u: Usuario) => {
+    const seguro = await confirmar({
+      titulo: tu.eliminarTitulo,
+      mensaje: tu.eliminarMensaje(u.nombre, u.correo),
+      accion: tu.eliminar,
+    });
+    if (!seguro) return;
+    setEliminandoId(u.id);
+    const fallo = await intentar(() => repo.usuarios.eliminar(u.id));
+    setEliminandoId(null);
+    setErrorAccion(fallo);
+    if (!fallo) {
+      setAviso("");
+      notificar(tu.eliminado(u.nombre));
+    }
+    recargar();
+  };
+
   return (
     <>
       <Encabezado
@@ -80,7 +104,7 @@ export default function Usuarios() {
         }
       />
       {aviso && <p className="mb-4 rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{aviso}</p>}
-      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
       <Tarjeta>
         <Tabla>
           <thead>
@@ -97,7 +121,10 @@ export default function Usuarios() {
                 {puedeEditar && (
                   <td className={`${td} text-right`}>
                     {u.id !== usuario!.id && (
-                      <Boton variante="fantasma" aria-label={tu.editarA(u.nombre)} title={t.comun.editar} onClick={() => { setErrorForm(""); setEditando({ ...u, sedeId: u.sedeId ?? db.sedes[0]?.id ?? null }); }}><Pencil size={15} /></Boton>
+                      <div className="flex justify-end gap-1">
+                        <Boton variante="fantasma" aria-label={tu.editarA(u.nombre)} title={t.comun.editar} onClick={() => { setErrorForm(""); setEditando({ ...u, sedeId: u.sedeId ?? db.sedes[0]?.id ?? null }); }}><Pencil size={15} /></Boton>
+                        <Boton variante="fantasma" aria-label={tu.eliminarA(u.nombre)} title={tu.eliminar} className="hover:text-red-600" cargando={eliminandoId === u.id} disabled={eliminandoId !== null} onClick={() => eliminar(u)}><Trash2 size={15} /></Boton>
+                      </div>
                     )}
                   </td>
                 )}

@@ -9,6 +9,7 @@ import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosAnuncio } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import type { Anuncio } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
 
@@ -44,9 +45,11 @@ export default function Comunicados() {
 
   const guardar = async () => {
     if (!form) return;
-    if (!form.titulo.trim()) return setErrorForm(t.comun.tituloObligatorio);
+    // Los textos se guardan sin espacios al principio ni al final
+    const datos = recortar(form);
+    if (!datos.titulo) return setErrorForm(t.comun.tituloObligatorio);
     setGuardando(true);
-    const fallo = await intentar(() => (editandoId ? repo.anuncios.editar(editandoId, form) : repo.anuncios.crear(form)));
+    const fallo = await intentar(() => (editandoId ? repo.anuncios.editar(editandoId, datos) : repo.anuncios.crear(datos)));
     setGuardando(false);
     if (fallo) return setErrorForm(fallo);
     setForm(null);

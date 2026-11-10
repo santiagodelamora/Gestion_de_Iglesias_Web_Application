@@ -112,6 +112,11 @@ export const en: Textos = {
     sinAccesoTexto: "Your role doesn’t have permission to view this information.",
     logotipo: "Logo",
     cerrarAviso: "Dismiss notice",
+    salidaTitulo: "Unsaved changes",
+    salidaMensaje: "You made changes on this page that haven’t been saved yet. Do you want to save them before continuing?",
+    salidaGuardar: "Save and continue",
+    salidaDescartar: "Discard changes",
+    salidaSeguir: "Keep editing",
   },
 
   menu: {
@@ -157,7 +162,10 @@ export const en: Textos = {
       registrar: { titulo: "Create your account", subtitulo: "An administrator will activate it and assign your campus." },
     },
     escribeCorreo: "Enter your email address.",
+    correoInvalido: "Enter a valid email, for example name@email.com.",
     escribeNombre: "Enter your name.",
+    nombreCorto: "The name must be at least 3 characters long.",
+    escribeContrasena: "Enter your password.",
     contrasenaCorta: "The password must be at least 8 characters long.",
     noCoinciden: "The passwords don’t match.",
     correoEnviado: (correo) => (
@@ -451,9 +459,22 @@ export const en: Textos = {
       <><b>{nombre}</b> won’t be able to sign in until you mark their account as active again.</>
     ),
     bloquear: "Block access",
-    soloAdmin: "Only an administrator can create users.",
-    faltaLlave: "SUPABASE_SERVICE_ROLE_KEY must be configured on the server to send invitations.",
+    eliminar: "Delete account",
+    eliminarA: (nombre) => `Delete ${nombre}’s account`,
+    eliminarTitulo: "Delete account",
+    eliminarMensaje: (nombre, correo) => (
+      <>
+        Delete <b>{nombre}</b>’s account ({correo})? They won’t be able to sign in and the email will be free to invite
+        again. What they recorded (donations, attendance and announcements) is kept. This can’t be undone; if you only
+        want to remove their access for a while, block the account from Edit.
+      </>
+    ),
+    eliminado: (nombre) => `${nombre}’s account was deleted.`,
+    soloAdmin: "Only an administrator can create or delete users.",
+    faltaLlave: "SUPABASE_SERVICE_ROLE_KEY must be configured on the server to invite or delete users.",
     cuentaExiste: "An account with that email already exists.",
+    noEliminarPropia: "You can’t delete your own account.",
+    noExiste: "That account no longer exists.",
   },
 
   sedes: {

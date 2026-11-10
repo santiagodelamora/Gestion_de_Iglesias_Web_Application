@@ -1,8 +1,8 @@
 "use client";
 
 import { Check, Search, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useConfirmacion } from "@/components/confirmacion";
+import { useCallback, useMemo, useState } from "react";
+import { useCambiosSinGuardar, useConfirmacion } from "@/components/confirmacion";
 import { Boton, Campo, Encabezado, Entrada, Etiqueta, Selector, SinAcceso, Tabla, Tarjeta, td, th, Vacio } from "@/components/ui";
 import { fechaCorta } from "@/lib/formato";
 import { useIdioma } from "@/lib/i18n";
@@ -80,14 +80,6 @@ export default function Asistencia() {
     setSinGuardar(false);
   }
 
-  // Al recargar o cerrar la pestaña con marcas pendientes, el navegador pregunta antes
-  useEffect(() => {
-    if (!sinGuardar) return;
-    const alSalir = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", alSalir);
-    return () => window.removeEventListener("beforeunload", alSalir);
-  }, [sinGuardar]);
-
   const historial = useMemo(
     () =>
       elegibles.slice(0, 12).map((e) => {
@@ -97,8 +89,6 @@ export default function Asistencia() {
       }),
     [elegibles, asistencias]
   );
-
-  if (!permiso) return <SinAcceso />;
 
   const presentes = convocados.filter((m) => marcas[m.id]).length;
   const visibles = convocados.filter((m) => m.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()));
@@ -127,7 +117,7 @@ export default function Asistencia() {
   };
 
   const guardar = async () => {
-    if (!evento) return;
+    if (!evento) return false;
     setGuardando(true);
     const fallo = await intentar(() =>
       repo.asistencias.guardar(
@@ -140,7 +130,14 @@ export default function Asistencia() {
     setGuardado(!fallo);
     if (!fallo) setSinGuardar(false);
     recargar();
+    return !fallo;
   };
+
+  // Con marcas pendientes, salir de la página (menú, sede, cerrar sesión, recargar
+  // o cerrar la pestaña) pregunta antes si se guardan
+  useCambiosSinGuardar(sinGuardar, guardar);
+
+  if (!permiso) return <SinAcceso />;
 
   return (
     <>

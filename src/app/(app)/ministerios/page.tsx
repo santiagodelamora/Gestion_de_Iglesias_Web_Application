@@ -8,6 +8,7 @@ import { fechaCorta } from "@/lib/formato";
 import { useIdioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
+import { recortar } from "@/lib/texto";
 import type { Evento, Miembro, Ministerio } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
 
@@ -57,8 +58,9 @@ export default function Ministerios() {
 
   const crear = async () => {
     if (!nuevo) return;
-    if (!nuevo.nombre.trim()) return setErrorAccion(t.comun.nombreObligatorio);
-    const datosNuevo = { nombre: nuevo.nombre.trim(), descripcion: nuevo.descripcion, coordinadorId: nuevo.coordinadorId || undefined };
+    // Los textos se guardan sin espacios al principio ni al final
+    const datosNuevo = recortar({ nombre: nuevo.nombre, descripcion: nuevo.descripcion, coordinadorId: nuevo.coordinadorId || undefined });
+    if (!datosNuevo.nombre) return setErrorAccion(t.comun.nombreObligatorio);
     if (await ejecutar(() => repo.ministerios.crear(sedeId, datosNuevo))) setNuevo(null);
   };
 

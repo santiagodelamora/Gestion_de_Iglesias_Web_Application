@@ -1,4 +1,4 @@
-import { invitarUsuario } from "@/app/(app)/usuarios/acciones";
+import { eliminarUsuario, invitarUsuario } from "@/app/(app)/usuarios/acciones";
 import { idiomaActual, textos } from "../i18n";
 import { supabaseNavegador } from "../supabase/cliente";
 import type { Anuncio, Aportacion, Asistencia, Evento, Horario, Miembro, Ministerio, Usuario } from "../types";
@@ -236,6 +236,10 @@ export function repositorioSupabase(): Repositorio {
         if (c.activo !== undefined) cambios.activo = c.activo;
         if ("miembroId" in c) cambios.miembro_id = c.miembroId ?? null;
         revisar(await db.from("usuarios").update(cambios).eq("id", id));
+      },
+      async eliminar(id) {
+        const r = await eliminarUsuario(id, idiomaActual());
+        if (r.error) throw new Error(r.error);
       },
     },
 

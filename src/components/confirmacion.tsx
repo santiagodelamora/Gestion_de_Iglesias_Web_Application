@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleCheck, X } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Boton, Modal } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 
@@ -19,9 +19,22 @@ export interface OpcionesConfirmacion {
   cancelar?: string;
 }
 
+// Cambios de la página actual que todavía no se guardan (ver useCambiosSinGuardar)
+interface CambiosPendientes {
+  // Guarda lo pendiente; devuelve true si se guardó
+  guardar: () => Promise<boolean>;
+}
+
+type OpcionSalida = "guardar" | "descartar" | "seguir";
+
 interface Contexto {
   confirmar: (opciones: OpcionesConfirmacion) => Promise<boolean>;
   notificar: (texto: string) => void;
+  // true si la página actual tiene cambios sin guardar
+  cambiosPendientes: () => boolean;
+  // Pregunta si guardar, descartar o seguir editando; devuelve true si ya se puede salir
+  preguntarSalida: () => Promise<boolean>;
+  registrarCambios: (cambios: CambiosPendientes | null) => void;
 }
 
 const ContextoConfirmacion = createContext<Contexto | null>(null);
@@ -29,6 +42,9 @@ const ContextoConfirmacion = createContext<Contexto | null>(null);
 export function ProveedorConfirmacion({ children }: { children: ReactNode }) {
   const [pendiente, setPendiente] = useState<(OpcionesConfirmacion & { responder: (ok: boolean) => void }) | null>(null);
   const [aviso, setAviso] = useState<{ texto: string; clave: number } | null>(null);
+  const cambios = useRef<CambiosPendientes | null>(null);
+  const [salida, setSalida] = useState<{ responder: (sale: boolean) => void } | null>(null);
+  const [guardandoSalida, setGuardandoSalida] = useState(false);
   const { t } = useIdioma();
 
   const confirmar = useCallback(
@@ -36,7 +52,15 @@ export function ProveedorConfirmacion({ children }: { children: ReactNode }) {
     []
   );
   const notificar = useCallback((texto: string) => setAviso({ texto, clave: Date.now() }), []);
-  const valor = useMemo(() => ({ confirmar, notificar }), [confirmar, notificar]);
+  const registrarCambios = useCallback((c: CambiosPendientes | null) => {
+    cambios.current = c;
+  }, []);
+  const cambiosPendientes = useCallback(() => cambios.current !== null, []);
+  const preguntarSalida = useCallback(() => new Promise<boolean>((responder) => setSalida({ responder })), []);
+  const valor = useMemo(
+    () => ({ confirmar, notificar, cambiosPendientes, preguntarSalida, registrarCambios }),
+    [confirmar, notificar, cambiosPendientes, preguntarSalida, registrarCambios]
+  );
 
   // El aviso se oculta solo a los pocos segundos
   useEffect(() => {
@@ -48,6 +72,19 @@ export function ProveedorConfirmacion({ children }: { children: ReactNode }) {
   const responder = (ok: boolean) => {
     pendiente?.responder(ok);
     setPendiente(null);
+  };
+
+  // Si guardar falla, la página se queda donde está y muestra su propio error
+  const elegirSalida = async (opcion: OpcionSalida) => {
+    if (!salida || guardandoSalida) return;
+    let sale = opcion === "descartar";
+    if (opcion === "guardar") {
+      setGuardandoSalida(true);
+      sale = (await cambios.current?.guardar()) ?? true;
+      setGuardandoSalida(false);
+    }
+    salida.responder(sale);
+    setSalida(null);
   };
 
   return (
@@ -66,6 +103,21 @@ export function ProveedorConfirmacion({ children }: { children: ReactNode }) {
         }
       >
         <div className="text-sm leading-relaxed text-piedra-700">{pendiente?.mensaje}</div>
+      </Modal>
+      <Modal
+        titulo={t.ui.salidaTitulo}
+        abierto={!!salida}
+        alCerrar={() => elegirSalida("seguir")}
+        pie={
+          <>
+            {/* El foco empieza en la opción segura: Enter no descarta por accidente */}
+            <Boton variante="secundario" data-autofocus disabled={guardandoSalida} onClick={() => elegirSalida("seguir")}>{t.ui.salidaSeguir}</Boton>
+            <Boton variante="peligro" disabled={guardandoSalida} onClick={() => elegirSalida("descartar")}>{t.ui.salidaDescartar}</Boton>
+            <Boton cargando={guardandoSalida} onClick={() => elegirSalida("guardar")}>{t.ui.salidaGuardar}</Boton>
+          </>
+        }
+      >
+        <p className="text-sm leading-relaxed text-piedra-700">{t.ui.salidaMensaje}</p>
       </Modal>
       {/* La región existe siempre para que los lectores de pantalla anuncien el aviso */}
       <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex justify-center sm:left-auto sm:justify-end print:hidden">
@@ -95,4 +147,28 @@ export function useConfirmacion() {
   const contexto = useContext(ContextoConfirmacion);
   if (!contexto) throw new Error("useConfirmacion debe usarse dentro de ProveedorConfirmacion.");
   return contexto;
+}
+
+// La página avisa que tiene cambios sin guardar. Mientras los tenga, el menú, el
+// selector de sede y cerrar sesión preguntan antes de salir (con la opción de
+// guardarlos), y el navegador pregunta al recargar o cerrar la pestaña.
+// guardar devuelve true si se guardó.
+export function useCambiosSinGuardar(hayCambios: boolean, guardar: () => Promise<boolean>) {
+  const { registrarCambios } = useConfirmacion();
+  // Siempre la versión más reciente, con lo último que se escribió
+  const guardarActual = useRef(guardar);
+  useEffect(() => {
+    guardarActual.current = guardar;
+  });
+
+  useEffect(() => {
+    if (!hayCambios) return;
+    const alSalir = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", alSalir);
+    registrarCambios({ guardar: () => guardarActual.current() });
+    return () => {
+      window.removeEventListener("beforeunload", alSalir);
+      registrarCambios(null);
+    };
+  }, [hayCambios, registrarCambios]);
 }

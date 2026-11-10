@@ -28,7 +28,7 @@ En cada línea de `.env.local`, el valor es todo lo que va después del `=`.
 
 Vercel no deja guardar como **Secret** una variable que empieza con `NEXT_PUBLIC_`, porque ese prefijo hace que el valor llegue al navegador. Las dos primeras son públicas a propósito: lo que protege los datos son las políticas RLS de Supabase. Una variable **Secret** ya guardada no se puede cambiar a **Config**; hay que borrarla y crearla de nuevo.
 
-La llave secreta solo se usa en el servidor de Vercel para enviar invitaciones. Nunca llega al navegador de los usuarios. Nunca le pongas el prefijo `NEXT_PUBLIC_`.
+La llave secreta solo se usa en el servidor de Vercel para enviar invitaciones y eliminar cuentas. Nunca llega al navegador de los usuarios. Nunca le pongas el prefijo `NEXT_PUBLIC_`.
 
 No conectes Supabase desde la pestaña **Storage** de Vercel ni desde su Agent. Eso crea una base de datos nueva y vacía, reemplaza estas tres variables y ata cada deploy a esa integración.
 

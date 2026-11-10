@@ -54,6 +54,10 @@ export function repositorioDemo(
         actualizar((db) => ({ ...db, usuarios: db.usuarios.map((u) => (u.id === id ? { ...u, ...c } : u)) }));
         return listo();
       },
+      eliminar: (id) => {
+        actualizar((db) => ({ ...db, usuarios: db.usuarios.filter((u) => u.id !== id) }));
+        return listo();
+      },
     },
     configuracion: {
       guardar: (c) => {
@@ -123,7 +127,7 @@ export function repositorioDemo(
         const db = leer();
         return db.anuncios
           .filter((a) => a.sedeId === null || a.sedeId === sedeId)
-          .map((a) => ({ ...a, autorNombre: db.usuarios.find((u) => u.id === a.autorId)?.nombre ?? "" }));
+          .map((a) => ({ ...a, autorNombre: db.usuarios.find((u) => u.id === a.autorId)?.nombre ?? a.autorNombre }));
       },
       crear: (d) => {
         const autor = usuarioActual();

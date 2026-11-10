@@ -7,6 +7,7 @@ import { Boton, Campo, EntradaContrasena } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import { useDatos } from "@/lib/store";
 import { supabaseNavegador } from "@/lib/supabase/cliente";
+import { LIMITE, useCamposTocados, validarContrasenaNueva } from "@/lib/validacion";
 
 // Destino de los enlaces de invitación y de recuperación de contraseña.
 // Supabase abre la sesión a partir del enlace; aquí se define la contraseña.
@@ -19,6 +20,9 @@ export default function Restablecer() {
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
   const { t } = useIdioma();
+  const campos = useCamposTocados<"contrasena">();
+  const errorContrasena = validarContrasenaNueva(contrasena);
+  const aviso = errorContrasena && campos.visible("contrasena") ? t.login[errorContrasena] : undefined;
 
   useEffect(() => {
     if (modo === "demo") return;
@@ -41,7 +45,8 @@ export default function Restablecer() {
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (contrasena.length < 8) return setError(t.login.contrasenaCorta);
+    campos.intentar();
+    if (errorContrasena) return setError("");
     if (contrasena !== confirmacion) return setError(t.login.noCoinciden);
     setGuardando(true);
     const { error: fallo } = await supabaseNavegador().auth.updateUser({ password: contrasena });
@@ -63,13 +68,21 @@ export default function Restablecer() {
       ) : !listo ? (
         <p className="text-sm text-piedra-600">{t.restablecer.validando}</p>
       ) : (
-        <form onSubmit={guardar} className="space-y-4">
+        <form onSubmit={guardar} noValidate className="space-y-4">
           {/* Mismo campo con botón de ojo que en el inicio de sesión y el registro */}
-          <Campo etiqueta={t.restablecer.nuevaContrasena}>
-            <EntradaContrasena autoComplete="new-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+          <Campo etiqueta={t.restablecer.nuevaContrasena} error={aviso}>
+            <EntradaContrasena
+              autoComplete="new-password"
+              maxLength={LIMITE.contrasena}
+              value={contrasena}
+              onChange={(e) => {
+                setContrasena(e.target.value);
+                campos.marcar("contrasena", e.target.value);
+              }}
+            />
           </Campo>
           <Campo etiqueta={t.login.confirmarContrasena}>
-            <EntradaContrasena autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
+            <EntradaContrasena autoComplete="new-password" maxLength={LIMITE.contrasena} value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
           </Campo>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <Boton type="submit" className="w-full py-2.5" cargando={guardando}>{guardando ? t.comun.guardando : t.restablecer.guardarYEntrar}</Boton>

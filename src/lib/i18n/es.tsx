@@ -116,6 +116,11 @@ export const es = {
     sinAccesoTexto: "Tu rol no tiene permiso para ver esta información.",
     logotipo: "Logotipo",
     cerrarAviso: "Cerrar aviso",
+    salidaTitulo: "Cambios sin guardar",
+    salidaMensaje: "Hiciste cambios en esta página que todavía no se guardan. ¿Quieres guardarlos antes de continuar?",
+    salidaGuardar: "Guardar y continuar",
+    salidaDescartar: "Descartar cambios",
+    salidaSeguir: "Seguir editando",
   },
 
   menu: {
@@ -161,8 +166,12 @@ export const es = {
       recuperar: { titulo: "Recupera tu acceso", subtitulo: "Te enviaremos un enlace para restablecer tu contraseña." },
       registrar: { titulo: "Crea tu cuenta", subtitulo: "Un administrador la activará y te asignará tu sede." },
     },
+    // Avisos bajo cada campo (lib/validacion.ts)
     escribeCorreo: "Escribe tu correo electrónico.",
+    correoInvalido: "Escribe un correo válido, por ejemplo nombre@correo.mx.",
     escribeNombre: "Escribe tu nombre.",
+    nombreCorto: "El nombre debe tener al menos 3 caracteres.",
+    escribeContrasena: "Escribe tu contraseña.",
     contrasenaCorta: "La contraseña debe tener al menos 8 caracteres.",
     noCoinciden: "Las contraseñas no coinciden.",
     correoEnviado: (correo: string) => (
@@ -457,10 +466,23 @@ export const es = {
       <><b>{nombre}</b> no podrá iniciar sesión hasta que vuelvas a marcar su cuenta como activa.</>
     ),
     bloquear: "Bloquear acceso",
-    // Respuestas de la acción del servidor que envía la invitación
-    soloAdmin: "Solo un administrador puede crear usuarios.",
-    faltaLlave: "Falta configurar SUPABASE_SERVICE_ROLE_KEY en el servidor para enviar invitaciones.",
+    eliminar: "Eliminar cuenta",
+    eliminarA: (nombre: string) => `Eliminar la cuenta de ${nombre}`,
+    eliminarTitulo: "Eliminar cuenta",
+    eliminarMensaje: (nombre: string, correo: string) => (
+      <>
+        ¿Eliminar la cuenta de <b>{nombre}</b> ({correo})? Ya no podrá iniciar sesión y el correo quedará libre para
+        invitarlo de nuevo. Lo que registró (aportaciones, asistencia y anuncios) se conserva. Esta acción no se puede
+        deshacer; si solo quieres quitarle el acceso por un tiempo, bloquea la cuenta desde Editar.
+      </>
+    ),
+    eliminado: (nombre: string) => `Se eliminó la cuenta de ${nombre}.`,
+    // Respuestas de las acciones del servidor que invitan y eliminan cuentas
+    soloAdmin: "Solo un administrador puede crear o eliminar usuarios.",
+    faltaLlave: "Falta configurar SUPABASE_SERVICE_ROLE_KEY en el servidor para invitar o eliminar usuarios.",
     cuentaExiste: "Ya existe una cuenta con ese correo.",
+    noEliminarPropia: "No puedes eliminar tu propia cuenta.",
+    noExiste: "La cuenta ya no existe.",
   },
 
   sedes: {

@@ -1,7 +1,8 @@
 "use client";
 
 import { Eye, EyeOff, Inbox, LoaderCircle, Lock, X } from "lucide-react";
-import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useIdioma } from "@/lib/i18n";
 
 // Componentes básicos de interfaz compartidos por todos los módulos.
@@ -48,22 +49,38 @@ export function Boton({
   );
 }
 
-// block: como inline dejarían bajo la línea el hueco de los descendentes
+// block: como inline dejarían bajo la línea el hueco de los descendentes.
+// Los colores del borde van aparte para cambiarlos a rojo si el campo es inválido.
 const campo =
-  "block w-full rounded-lg border border-piedra-300 bg-white px-3 py-2 text-sm text-piedra-900 outline-none transition placeholder:text-piedra-400 hover:border-piedra-400 focus:border-marca-600 focus:ring-4 focus:ring-marca-600/15 disabled:bg-piedra-50 disabled:text-piedra-500";
+  "block w-full rounded-lg border bg-white px-3 py-2 text-sm text-piedra-900 outline-none transition placeholder:text-piedra-400 focus:ring-4 disabled:bg-piedra-50 disabled:text-piedra-500";
+const campoNormal = "border-piedra-300 hover:border-piedra-400 focus:border-marca-600 focus:ring-marca-600/15";
+const campoInvalido = "border-red-400 hover:border-red-500 focus:border-red-600 focus:ring-red-600/15";
+
+// Campo con error: avisa a la entrada que contiene para pintarla en rojo y
+// enlazarla al mensaje (aria-describedby), así el lector de pantalla lo lee.
+const ContextoCampo = createContext<{ idError: string; invalido: boolean } | null>(null);
+
+function useEstiloCampo() {
+  const c = useContext(ContextoCampo);
+  return c?.invalido
+    ? { clase: unir(campo, campoInvalido), aria: { "aria-invalid": true, "aria-describedby": c.idError } }
+    : { clase: unir(campo, campoNormal), aria: {} };
+}
 
 export function Entrada({ className, ...p }: ComponentProps<"input">) {
-  return <input className={unir(campo, className)} {...p} />;
+  const { clase, aria } = useEstiloCampo();
+  return <input className={unir(clase, className)} {...aria} {...p} />;
 }
 
 // Campo de contraseña con un botón de ojo para mostrar u ocultar lo escrito
 export function EntradaContrasena({ className, ...p }: Omit<ComponentProps<"input">, "type">) {
   const [visible, setVisible] = useState(false);
   const { t } = useIdioma();
+  const { clase, aria } = useEstiloCampo();
   const etiqueta = visible ? t.ui.ocultarContrasena : t.ui.mostrarContrasena;
   return (
     <div className="relative">
-      <input type={visible ? "text" : "password"} className={unir(campo, "pr-10", className)} {...p} />
+      <input type={visible ? "text" : "password"} className={unir(clase, "pr-10", className)} {...aria} {...p} />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
@@ -79,19 +96,27 @@ export function EntradaContrasena({ className, ...p }: Omit<ComponentProps<"inpu
 }
 
 export function AreaTexto({ className, ...p }: ComponentProps<"textarea">) {
-  return <textarea className={unir(campo, "min-h-24", className)} {...p} />;
+  const { clase, aria } = useEstiloCampo();
+  return <textarea className={unir(clase, "min-h-24", className)} {...aria} {...p} />;
 }
 
 export function Selector({ className, ...p }: ComponentProps<"select">) {
-  return <select className={unir(campo, "cursor-pointer", className)} {...p} />;
+  const { clase, aria } = useEstiloCampo();
+  return <select className={unir(clase, "cursor-pointer", className)} {...aria} {...p} />;
 }
 
-export function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
+// error: mensaje bajo la entrada. Va fuera de la <label> para no volverse
+// parte del nombre del campo; la entrada lo enlaza con aria-describedby.
+export function Campo({ etiqueta, error, children }: { etiqueta: string; error?: string; children: ReactNode }) {
+  const idError = useId();
   return (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-semibold text-piedra-700">{etiqueta}</span>
-      {children}
-    </label>
+    <div className="space-y-1.5">
+      <label className="block space-y-1.5">
+        <span className="text-sm font-semibold text-piedra-700">{etiqueta}</span>
+        <ContextoCampo.Provider value={{ idError, invalido: !!error }}>{children}</ContextoCampo.Provider>
+      </label>
+      {error && <p id={idError} className="text-xs text-red-700">{error}</p>}
+    </div>
   );
 }
 
@@ -191,7 +216,10 @@ export function Modal({
   }, [abierto]);
 
   if (!abierto) return null;
-  return (
+  // Se dibuja en <body>: el <main> de cada página tiene una animación con
+  // transform, y un ancestro con transform encierra a los elementos fixed (el
+  // fondo solo cubría el contenido y el diálogo quedaba cortado arriba).
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex animate-aparecer items-center justify-center bg-piedra-950/45 p-4"
       onClick={alCerrar}
@@ -216,9 +244,10 @@ export function Modal({
           </button>
         </div>
         <div className="space-y-4 px-6 py-5">{children}</div>
-        {pie && <div className="flex justify-end gap-2 rounded-b-xl border-t border-piedra-200 bg-piedra-50 px-6 py-3.5">{pie}</div>}
+        {pie && <div className="flex flex-wrap justify-end gap-2 rounded-b-xl border-t border-piedra-200 bg-piedra-50 px-6 py-3.5">{pie}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

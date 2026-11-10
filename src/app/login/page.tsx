@@ -6,6 +6,14 @@ import { PantallaAcceso } from "@/components/pantalla-acceso";
 import { Boton, Campo, Entrada, EntradaContrasena } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import { useDatos } from "@/lib/store";
+import {
+  LIMITE,
+  useCamposTocados,
+  validarContrasena,
+  validarContrasenaNueva,
+  validarCorreo,
+  validarNombre,
+} from "@/lib/validacion";
 
 type Vista = "entrar" | "recuperar" | "registrar";
 
@@ -22,6 +30,31 @@ export default function Login() {
   const [enviado, setEnviado] = useState(false);
   const { t } = useIdioma();
   const tl = t.login;
+  const campos = useCamposTocados<"nombre" | "correo" | "contrasena">();
+
+  // Se recalculan en cada tecla. La contraseña del registro pide 8 caracteres;
+  // la del inicio de sesión solo que no esté vacía.
+  const errores = {
+    nombre: validarNombre(nombre),
+    correo: validarCorreo(correo),
+    contrasena: vista === "registrar" ? validarContrasenaNueva(contrasena) : validarContrasena(contrasena),
+  };
+  const aviso = (campo: keyof typeof errores) => {
+    const clave = errores[campo];
+    return clave && campos.visible(campo) ? tl[clave] : undefined;
+  };
+  // Si algún campo es inválido, muestra todos sus avisos y no envía. Los
+  // formularios llevan noValidate: estos avisos sustituyen a los del navegador.
+  const hayErrores = (...lista: (keyof typeof errores)[]) => {
+    campos.intentar();
+    if (!lista.some((c) => errores[c])) return false;
+    setError("");
+    return true;
+  };
+  const alCambiar = (campo: keyof typeof errores, guardar: (valor: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    guardar(e.target.value);
+    campos.marcar(campo, e.target.value);
+  };
 
   const irA = (v: Vista) => {
     setVista(v);
@@ -29,6 +62,7 @@ export default function Login() {
     setError("");
     setContrasena("");
     setConfirmacion("");
+    campos.reiniciar();
   };
 
   // Con sesión iniciada se pasa directo a la aplicación
@@ -38,6 +72,7 @@ export default function Login() {
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hayErrores("correo", "contrasena")) return;
     setEnviando(true);
     const fallo = await entrar(correo, contrasena);
     setError(fallo ?? "");
@@ -46,7 +81,7 @@ export default function Login() {
   };
 
   const pedirEnlace = async () => {
-    if (!correo.trim()) return setError(tl.escribeCorreo);
+    if (hayErrores("correo")) return;
     setError("");
     setEnviando(true);
     const fallo = await recuperar(correo);
@@ -57,9 +92,7 @@ export default function Login() {
 
   const crearCuenta = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim()) return setError(tl.escribeNombre);
-    if (!correo.trim()) return setError(tl.escribeCorreo);
-    if (contrasena.length < 8) return setError(tl.contrasenaCorta);
+    if (hayErrores("nombre", "correo", "contrasena")) return;
     if (contrasena !== confirmacion) return setError(tl.noCoinciden);
     setEnviando(true);
     const resultado = await registrar(nombre, correo, contrasena);
@@ -92,19 +125,20 @@ export default function Login() {
             <Boton variante="secundario" className="w-full py-2.5" onClick={() => irA("entrar")}>{tl.volverAIniciar}</Boton>
           </div>
         ) : (
-          <form onSubmit={crearCuenta} className="space-y-4">
-            <Campo etiqueta={t.comun.nombreCompleto}>
-              <Entrada autoComplete="name" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={tl.nombrePlaceholder} />
+          <form onSubmit={crearCuenta} noValidate className="space-y-4">
+            <Campo etiqueta={t.comun.nombreCompleto} error={aviso("nombre")}>
+              <Entrada autoComplete="name" maxLength={LIMITE.nombre} value={nombre} onChange={alCambiar("nombre", setNombre)} placeholder={tl.nombrePlaceholder} />
             </Campo>
-            <Campo etiqueta={t.comun.correoElectronico}>
-              <Entrada type="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder={tl.correoPlaceholder} />
+            <Campo etiqueta={t.comun.correoElectronico} error={aviso("correo")}>
+              <Entrada type="email" autoComplete="email" maxLength={LIMITE.correo} value={correo} onChange={alCambiar("correo", setCorreo)} placeholder={tl.correoPlaceholder} />
             </Campo>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Campo etiqueta={tl.contrasena}>
-                <EntradaContrasena autoComplete="new-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} placeholder={tl.contrasenaPlaceholder} />
+            {/* items-start: el aviso de un campo no estira al de al lado */}
+            <div className="grid items-start gap-4 sm:grid-cols-2">
+              <Campo etiqueta={tl.contrasena} error={aviso("contrasena")}>
+                <EntradaContrasena autoComplete="new-password" maxLength={LIMITE.contrasena} value={contrasena} onChange={alCambiar("contrasena", setContrasena)} placeholder={tl.contrasenaPlaceholder} />
               </Campo>
               <Campo etiqueta={tl.confirmarContrasena}>
-                <EntradaContrasena autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
+                <EntradaContrasena autoComplete="new-password" maxLength={LIMITE.contrasena} value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
               </Campo>
             </div>
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -116,12 +150,12 @@ export default function Login() {
           </form>
         )
       ) : vista === "entrar" ? (
-        <form onSubmit={enviar} className="space-y-4">
-          <Campo etiqueta={t.comun.correoElectronico}>
-            <Entrada type="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder={tl.correoPlaceholder} />
+        <form onSubmit={enviar} noValidate className="space-y-4">
+          <Campo etiqueta={t.comun.correoElectronico} error={aviso("correo")}>
+            <Entrada type="email" autoComplete="email" maxLength={LIMITE.correo} value={correo} onChange={alCambiar("correo", setCorreo)} placeholder={tl.correoPlaceholder} />
           </Campo>
-          <Campo etiqueta={tl.contrasena}>
-            <EntradaContrasena autoComplete="current-password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+          <Campo etiqueta={tl.contrasena} error={aviso("contrasena")}>
+            <EntradaContrasena autoComplete="current-password" maxLength={LIMITE.contrasena} value={contrasena} onChange={alCambiar("contrasena", setContrasena)} />
           </Campo>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <Boton type="submit" className="w-full py-2.5" cargando={enviando}>{enviando ? tl.entrando : tl.iniciarSesion}</Boton>
@@ -137,8 +171,8 @@ export default function Login() {
         </form>
       ) : (
         <div className="space-y-4">
-          <Campo etiqueta={t.comun.correoElectronico}>
-            <Entrada type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder={tl.correoPlaceholder} />
+          <Campo etiqueta={t.comun.correoElectronico} error={aviso("correo")}>
+            <Entrada type="email" maxLength={LIMITE.correo} value={correo} onChange={alCambiar("correo", setCorreo)} placeholder={tl.correoPlaceholder} />
           </Campo>
           {enviado && <p className="rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{tl.enlaceEnviado}</p>}
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}

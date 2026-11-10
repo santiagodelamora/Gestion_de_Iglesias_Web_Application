@@ -33,7 +33,7 @@ Mientras no exista el administrador, nadie más debe poder registrarse: la prime
 
 Con el registro cerrado, las cuentas solo se crean por invitación desde **Usuarios**.
 
-**Para usar el botón "Crear cuenta" del inicio de sesión**, vuelve a activar **Allow new users to sign up** después de crear el administrador (paso 5) y deja encendido **Confirm email**. Cada cuenta creada así nace como Miembro, **inactiva y sin sede**: no ve nada hasta que un administrador, en **Usuarios**, le asigna rol y sede y la activa. El riesgo es que cualquiera puede llenar la lista de pendientes con cuentas falsas; el correo gratuito de Supabase además envía pocos correos por hora.
+**Para usar el botón "Crear cuenta" del inicio de sesión**, vuelve a activar **Allow new users to sign up** después de crear el administrador (paso 5) y deja encendido **Confirm email**. Cada cuenta creada así nace como Miembro, **inactiva y sin sede**: no ve nada hasta que un administrador, en **Usuarios**, le asigna rol y sede y la activa. El riesgo es que cualquiera puede llenar la lista de pendientes con cuentas falsas (el administrador las borra con el botón de eliminar de cada fila); el correo gratuito de Supabase además envía pocos correos por hora.
 
 ## 4. Direcciones de la aplicación
 
@@ -77,11 +77,44 @@ En **Registro de miembro vinculado** elige a qué miembro corresponde la cuenta.
 - **Coordinador:** el sistema sabe qué ministerio coordina por este vínculo (el coordinador de cada ministerio se elige en *Ministerios*).
 - **Miembro:** así la persona ve su propio registro.
 
+Para quitarle el acceso a alguien hay dos opciones en cada fila de **Usuarios**:
+
+- **Editar → desmarcar Cuenta activa:** bloquea el inicio de sesión y se puede revertir.
+- **Eliminar cuenta (bote de basura):** borra la cuenta de Supabase y libera el correo para invitarlo otra vez. No se puede deshacer. Las aportaciones, la asistencia y los anuncios que registró se conservan; los anuncios siguen mostrando su nombre. Nadie puede eliminar su propia cuenta, así que siempre queda al menos un administrador.
+
 El servicio de correo incluido en Supabase solo envía unos pocos correos por hora. Para un proyecto académico alcanza; si necesitas más, configura un SMTP propio en **Project Settings → Authentication → SMTP Settings**.
 
 ## Publicar en internet
 
 La guía [DESPLIEGUE.md](DESPLIEGUE.md) explica cómo subir la aplicación a Vercel.
+
+## Si conectaste GitHub en Supabase
+
+Con la integración de GitHub (**Project Settings → Integrations → GitHub**), Supabase aplica los archivos de `supabase/migrations/` cada vez que llega un cambio a la rama de producción. GitHub muestra el resultado en cada commit como el check **Supabase Preview**.
+
+Supabase anota las migraciones que ya aplicó en la tabla `supabase_migrations.schema_migrations`, pero el SQL Editor no escribe en ella. Si creaste las tablas con el paso 2, la integración cree que faltan todas, intenta crearlas de nuevo y el check falla con `ERROR: type "rol" already exists (SQLSTATE 42710)`. Tus tablas y datos no cambian: la migración se detiene en la primera instrucción.
+
+Para corregirlo, ejecuta esto **una sola vez** en el **SQL Editor**. Registra las tres migraciones como ya aplicadas:
+
+```sql
+create schema if not exists supabase_migrations;
+create table if not exists supabase_migrations.schema_migrations (
+  version text primary key,
+  statements text[],
+  name text
+);
+insert into supabase_migrations.schema_migrations (version, name) values
+  ('20261026000001', 'fase1_esquema'),
+  ('20261026000002', 'fase2_esquema'),
+  ('20261026000003', 'fase3_esquema')
+on conflict (version) do nothing;
+```
+
+El check sale en verde desde el siguiente cambio que llegue a la rama de producción. Los commits anteriores conservan su ❌.
+
+Desde ese momento, una migración nueva se agrega como archivo en `supabase/migrations/` y la aplica la integración al fusionar en la rama de producción. No la ejecutes también en el SQL Editor: el check volvería a fallar con *already exists*.
+
+Si no quieres que Supabase aplique las migraciones, desconecta la integración en **Project Settings → Integrations → GitHub** y el check deja de aparecer.
 
 ## Qué protege la base de datos
 
