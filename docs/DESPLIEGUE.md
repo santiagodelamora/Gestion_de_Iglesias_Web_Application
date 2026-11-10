@@ -36,11 +36,11 @@ Presiona **Deploy**. En uno o dos minutos Vercel te da una dirección como `http
 
 ## 3. Avisar a Supabase de la nueva dirección
 
-Los correos de invitación y de recuperación de contraseña deben llevar a la dirección pública, no a `localhost`.
+Los correos de invitación, de recuperación de contraseña y de verificación de cuentas nuevas deben llevar a la dirección pública, no a `localhost`.
 
 1. En Supabase ve a **Authentication → URL Configuration**.
 2. En **Site URL** escribe la dirección de Vercel.
-3. En **Redirect URLs** agrega `https://tu-app.vercel.app/restablecer`. Puedes dejar también la de `localhost` para seguir probando en tu computadora.
+3. En **Redirect URLs** agrega `https://tu-app.vercel.app/restablecer` y `https://tu-app.vercel.app/confirmar`. Puedes dejar también las de `localhost` para seguir probando en tu computadora.
 
 ## 4. Probar
 

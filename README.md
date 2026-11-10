@@ -38,7 +38,9 @@ Abre http://localhost:3000.
 | Comunicados | Total | Total | Total | — | Ver | Ver (en Inicio) |
 | Dashboard financiero | Sí | Sí | No | Sí | No | No |
 | Reportes | Todos | Todos | Sin ingresos | Solo ingresos | Su ministerio | — |
-| Configuración | Total | Ver | — | — | — | — |
+| Configuración | Total | Ver | Solo idioma | Solo idioma | Solo idioma | Solo idioma |
+
+Todos los roles entran a Configuración para elegir el idioma; los datos de la iglesia, el contacto y los horarios solo los ven el administrador y el pastor.
 
 El administrador puede cambiar de sede desde la barra superior; los demás roles trabajan solo con su sede.
 

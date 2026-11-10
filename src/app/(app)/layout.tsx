@@ -34,11 +34,13 @@ interface Enlace {
   href: string;
   texto: keyof Textos["menu"]["enlaces"];
   icono: React.ReactNode;
-  grupo: Grupo;
+  // Un enlace puede cambiar de grupo según el rol
+  grupo: Grupo | ((rol: Rol) => Grupo);
   visible: (rol: Rol) => boolean;
 }
 
 const porModulo = (m: Modulo) => (rol: Rol) => puedeVer(rol, m);
+const grupoDe = (e: Enlace, rol: Rol) => (typeof e.grupo === "function" ? e.grupo(rol) : e.grupo);
 
 const ENLACES: Enlace[] = [
   { href: "/inicio", texto: "inicio", icono: <Home size={18} />, grupo: "general", visible: (r) => r === "miembro" },
@@ -52,7 +54,15 @@ const ENLACES: Enlace[] = [
   { href: "/reportes", texto: "reportes", icono: <BarChart3 size={18} />, grupo: "finanzas", visible: porModulo("reportes") },
   { href: "/usuarios", texto: "usuarios", icono: <UserCog size={18} />, grupo: "administracion", visible: porModulo("usuarios") },
   { href: "/sedes", texto: "sedes", icono: <Building2 size={18} />, grupo: "administracion", visible: porModulo("sedes") },
-  { href: "/configuracion", texto: "configuracion", icono: <Settings size={18} />, grupo: "administracion", visible: porModulo("configuracion") },
+  // Todos entran para elegir su idioma. Quien no administra la iglesia lo ve en
+  // General: ahí solo encuentra sus preferencias, no datos de la iglesia
+  {
+    href: "/configuracion",
+    texto: "configuracion",
+    icono: <Settings size={18} />,
+    grupo: (r) => (puedeVer(r, "configuracion") ? "administracion" : "general"),
+    visible: () => true,
+  },
 ];
 
 const GRUPOS: Grupo[] = ["general", "congregacion", "finanzas", "administracion"];
@@ -163,7 +173,7 @@ function Marco({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 space-y-5 pb-6">
         {GRUPOS.map((grupo) => {
-          const delGrupo = enlaces.filter((e) => e.grupo === grupo);
+          const delGrupo = enlaces.filter((e) => grupoDe(e, usuario.rol) === grupo);
           if (delGrupo.length === 0) return null;
           return (
             <div key={grupo}>

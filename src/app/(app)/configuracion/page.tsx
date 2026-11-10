@@ -4,7 +4,7 @@ import { Languages, Plus, Trash2, Upload } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useCambiosSinGuardar, useConfirmacion } from "@/components/confirmacion";
 import { Logo } from "@/components/logo";
-import { Boton, Campo, Encabezado, Entrada, Selector, SinAcceso, Tarjeta } from "@/components/ui";
+import { Boton, Campo, Encabezado, Entrada, Selector, Tarjeta } from "@/components/ui";
 import { IDIOMAS, textos, useIdioma, type Idioma } from "@/lib/i18n";
 import { acceso } from "@/lib/permisos";
 import type { DatosSede } from "@/lib/repositorio/tipos";
@@ -23,7 +23,14 @@ const distinto = (a?: string | null, b?: string | null) => (a ?? "").trim() !== 
 export default function Configuracion() {
   const { db, usuario, repo, recargar, sedeId } = useDatos();
   const sede = db.sedes.find((s) => s.id === sedeId)!;
-  const cargarHorarios = useCallback(() => repo.horarios.listar(sedeId), [repo, sedeId]);
+  // Todos entran a Configuración para elegir su idioma; los datos de la iglesia
+  // solo los ve quien tiene permiso sobre ellos (administrador y pastor).
+  const permiso = acceso(usuario!.rol, "configuracion");
+  const veIglesia = !!permiso;
+  const cargarHorarios = useCallback(
+    () => (veIglesia ? repo.horarios.listar(sedeId) : Promise.resolve<Horario[]>([])),
+    [repo, sedeId, veIglesia],
+  );
   const { datos: horarios, recargar: recargarHorarios } = useCarga<Horario[]>(cargarHorarios, []);
 
   const [general, setGeneral] = useState(db.configuracion);
@@ -38,8 +45,6 @@ export default function Configuracion() {
   const tcf = t.configuracion;
   const dia = (d: string) => t.catalogos.dias[d] ?? d;
   if (contacto.id !== sede.id) setContacto(sede);
-
-  const permiso = acceso(usuario!.rol, "configuracion");
 
   // Lo escrito difiere de lo guardado. El logotipo y los horarios se guardan al
   // momento, así que no cuentan.
@@ -75,7 +80,6 @@ export default function Configuracion() {
   // Salir de la página con cambios pendientes pregunta antes si se guardan
   useCambiosSinGuardar(hayCambios, guardar);
 
-  if (!permiso) return <SinAcceso />;
   const soloLectura = permiso !== "total";
 
   const subirLogo = async (f: File | undefined) => {
@@ -129,10 +133,10 @@ export default function Configuracion() {
     <>
       <Encabezado
         titulo={tcf.titulo}
-        descripcion={tcf.descripcion}
+        descripcion={veIglesia ? tcf.descripcion : tcf.descripcionPersonal}
         acciones={!soloLectura && <Boton cargando={guardando} onClick={guardar}>{tcf.guardarCambios}</Boton>}
       />
-      {/* Fuera del fieldset: quien solo consulta la configuración también elige su idioma */}
+      {/* Fuera del fieldset: cualquier rol elige su idioma, aunque no vea los datos de la iglesia */}
       <Tarjeta className="mb-4 flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
           <h2 className="flex items-center gap-2 font-semibold">
@@ -152,59 +156,61 @@ export default function Configuracion() {
       {mensaje && (
         <p className={`mb-4 rounded-lg px-3 py-2 text-sm ${mensaje.ok ? "bg-olivo-50 text-olivo-700" : "bg-red-50 text-red-700"}`}>{mensaje.texto}</p>
       )}
-      <fieldset disabled={soloLectura} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Tarjeta className="space-y-4 p-5">
-          <h2 className="font-semibold">{tcf.iglesia}</h2>
-          <div className="flex items-center gap-4">
-            <Logo url={general.logoUrl} tamano={64} />
-            <input ref={archivo} type="file" accept="image/*" className="hidden" onChange={(e) => subirLogo(e.target.files?.[0])} />
-            {!soloLectura && (
-              <Boton variante="secundario" type="button" disabled={subiendo} onClick={() => archivo.current?.click()}>
-                <Upload size={16} /> {subiendo ? tcf.subiendo : tcf.cambiarLogo}
-              </Boton>
-            )}
-          </div>
-          <Campo etiqueta={tcf.nombreIglesia}><Entrada value={general.nombre} onChange={(e) => setGeneral({ ...general, nombre: e.target.value })} /></Campo>
-          <Campo etiqueta={tcf.lema}><Entrada value={general.lema} onChange={(e) => setGeneral({ ...general, lema: e.target.value })} /></Campo>
-        </Tarjeta>
-
-        <Tarjeta className="space-y-4 p-5">
-          <h2 className="font-semibold">{tcf.contacto(sede.nombre)}</h2>
-          <Campo etiqueta={t.comun.direccion}><Entrada value={contacto.direccion} onChange={(e) => setContacto({ ...contacto, direccion: e.target.value })} /></Campo>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo etiqueta={t.comun.telefono}><Entrada value={contacto.telefono} onChange={(e) => setContacto({ ...contacto, telefono: e.target.value })} /></Campo>
-            <Campo etiqueta={t.comun.correo}><Entrada value={contacto.correo} onChange={(e) => setContacto({ ...contacto, correo: e.target.value })} /></Campo>
-          </div>
-        </Tarjeta>
-
-        <Tarjeta className="p-5 lg:col-span-2">
-          <h2 className="mb-3 font-semibold">{tcf.horarios(sede.nombre)}</h2>
-          <ul className="divide-y divide-piedra-100 rounded-lg border border-piedra-200">
-            {horarios.map((h) => (
-              <li key={h.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                <span><strong>{dia(h.dia)}</strong> · {h.hora} · {h.tipo}</span>
-                {!soloLectura && (
-                  <button type="button" aria-label={tcf.quitarHorario} title={tcf.quitarHorario} className="text-piedra-400 hover:text-red-600" onClick={() => quitarHorario(h)}>
-                    <Trash2 size={15} />
-                  </button>
-                )}
-              </li>
-            ))}
-            {horarios.length === 0 && <li className="px-3 py-2 text-sm text-piedra-500">{tcf.sinHorarios}</li>}
-          </ul>
-          {!soloLectura && (
-            <div className="mt-3 grid gap-2 sm:grid-cols-[140px_120px_1fr_auto]">
-              <Selector value={nuevo.dia} onChange={(e) => setNuevo({ ...nuevo, dia: e.target.value })}>
-                {DIAS.map((d) => <option key={d} value={d}>{dia(d)}</option>)}
-              </Selector>
-              <Entrada type="time" value={nuevo.hora} onChange={(e) => setNuevo({ ...nuevo, hora: e.target.value })} />
-              <Entrada placeholder={tcf.tipoReunion} value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value })} />
-              {/* Sin tipo de reunión no hay horario que agregar */}
-              <Boton type="button" disabled={!nuevo.tipo.trim()} onClick={agregarHorario}><Plus size={16} /> {t.comun.agregar}</Boton>
+      {veIglesia && (
+        <fieldset disabled={soloLectura} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Tarjeta className="space-y-4 p-5">
+            <h2 className="font-semibold">{tcf.iglesia}</h2>
+            <div className="flex items-center gap-4">
+              <Logo url={general.logoUrl} tamano={64} />
+              <input ref={archivo} type="file" accept="image/*" className="hidden" onChange={(e) => subirLogo(e.target.files?.[0])} />
+              {!soloLectura && (
+                <Boton variante="secundario" type="button" disabled={subiendo} onClick={() => archivo.current?.click()}>
+                  <Upload size={16} /> {subiendo ? tcf.subiendo : tcf.cambiarLogo}
+                </Boton>
+              )}
             </div>
-          )}
-        </Tarjeta>
-      </fieldset>
+            <Campo etiqueta={tcf.nombreIglesia}><Entrada value={general.nombre} onChange={(e) => setGeneral({ ...general, nombre: e.target.value })} /></Campo>
+            <Campo etiqueta={tcf.lema}><Entrada value={general.lema} onChange={(e) => setGeneral({ ...general, lema: e.target.value })} /></Campo>
+          </Tarjeta>
+
+          <Tarjeta className="space-y-4 p-5">
+            <h2 className="font-semibold">{tcf.contacto(sede.nombre)}</h2>
+            <Campo etiqueta={t.comun.direccion}><Entrada value={contacto.direccion} onChange={(e) => setContacto({ ...contacto, direccion: e.target.value })} /></Campo>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo etiqueta={t.comun.telefono}><Entrada value={contacto.telefono} onChange={(e) => setContacto({ ...contacto, telefono: e.target.value })} /></Campo>
+              <Campo etiqueta={t.comun.correo}><Entrada value={contacto.correo} onChange={(e) => setContacto({ ...contacto, correo: e.target.value })} /></Campo>
+            </div>
+          </Tarjeta>
+
+          <Tarjeta className="p-5 lg:col-span-2">
+            <h2 className="mb-3 font-semibold">{tcf.horarios(sede.nombre)}</h2>
+            <ul className="divide-y divide-piedra-100 rounded-lg border border-piedra-200">
+              {horarios.map((h) => (
+                <li key={h.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                  <span><strong>{dia(h.dia)}</strong> · {h.hora} · {h.tipo}</span>
+                  {!soloLectura && (
+                    <button type="button" aria-label={tcf.quitarHorario} title={tcf.quitarHorario} className="text-piedra-400 hover:text-red-600" onClick={() => quitarHorario(h)}>
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </li>
+              ))}
+              {horarios.length === 0 && <li className="px-3 py-2 text-sm text-piedra-500">{tcf.sinHorarios}</li>}
+            </ul>
+            {!soloLectura && (
+              <div className="mt-3 grid gap-2 sm:grid-cols-[140px_120px_1fr_auto]">
+                <Selector value={nuevo.dia} onChange={(e) => setNuevo({ ...nuevo, dia: e.target.value })}>
+                  {DIAS.map((d) => <option key={d} value={d}>{dia(d)}</option>)}
+                </Selector>
+                <Entrada type="time" value={nuevo.hora} onChange={(e) => setNuevo({ ...nuevo, hora: e.target.value })} />
+                <Entrada placeholder={tcf.tipoReunion} value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value })} />
+                {/* Sin tipo de reunión no hay horario que agregar */}
+                <Boton type="button" disabled={!nuevo.tipo.trim()} onClick={agregarHorario}><Plus size={16} /> {t.comun.agregar}</Boton>
+              </div>
+            )}
+          </Tarjeta>
+        </fieldset>
+      )}
     </>
   );
 }

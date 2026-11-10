@@ -39,9 +39,11 @@ Con el registro cerrado, las cuentas solo se crean por invitación desde **Usuar
 
 1. Ve a **Authentication → URL Configuration**.
 2. En **Site URL** escribe `http://localhost:3000` (cámbialo por la dirección de Vercel cuando publiques la app).
-3. En **Redirect URLs** agrega `http://localhost:3000/restablecer` y `http://localhost:3000/login` (y después las mismas con `https://tu-app.vercel.app`).
+3. En **Redirect URLs** agrega `http://localhost:3000/restablecer` y `http://localhost:3000/confirmar` (y después las mismas con `https://tu-app.vercel.app`).
 
-`/restablecer` es a donde llevan los correos de invitación y de recuperación de contraseña; `/login`, el de confirmación de las cuentas creadas con "Crear cuenta".
+`/restablecer` es a donde llevan los correos de invitación y de recuperación de contraseña; `/confirmar`, el de verificación de las cuentas creadas con "Crear cuenta": muestra que la cuenta quedó verificada, o que el enlace expiró o ya se usó. Si `/confirmar` no está en la lista, el correo se verifica igual, pero Supabase manda a la persona a la Site URL sin mostrarle ese aviso.
+
+Al reenviar el correo de verificación (botón que aparece al intentar iniciar sesión sin haber verificado), el enlace del correo anterior deja de servir.
 
 ## 5. Crear el primer administrador
 

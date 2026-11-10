@@ -198,10 +198,8 @@ export const es = {
     // Confirmación del correo de las cuentas creadas con "Crear cuenta"
     reenviarConfirmacion: "Reenviar correo de confirmación",
     confirmacionReenviada: (correo: string) => (
-      <>Te enviamos otro correo a <b>{correo}</b>. Abre el enlace y después inicia sesión.</>
+      <>Te enviamos otro correo a <b>{correo}</b>. Abre el enlace para verificar tu cuenta.</>
     ),
-    correoConfirmado: "Tu correo quedó confirmado. Inicia sesión con tu contraseña.",
-    enlaceVencido: "El enlace de confirmación expiró o ya se usó. Inicia sesión: si tu correo sigue sin confirmar, podrás pedir otro.",
   },
 
   // Errores de inicio de sesión, recuperación y registro (store.tsx)
@@ -230,6 +228,20 @@ export const es = {
     validando: "Validando el enlace… Si no avanza, el enlace pudo haber expirado: solicita uno nuevo desde la pantalla de inicio de sesión.",
     nuevaContrasena: "Nueva contraseña",
     guardarYEntrar: "Guardar y entrar",
+  },
+
+  // Página a la que lleva el enlace del correo de verificación (app/confirmar)
+  confirmar: {
+    validando: { titulo: "Verificando tu correo", subtitulo: undefined },
+    confirmado: { titulo: "¡Cuenta verificada!", subtitulo: "Tu correo quedó confirmado correctamente." },
+    invalido: { titulo: "El enlace ya no es válido", subtitulo: "Expiró o ya se usó." },
+    espera: "Un momento…",
+    iniciaSesion: "Ya puedes iniciar sesión con tu correo y tu contraseña. Si un administrador todavía no activa tu cuenta, verás un aviso al entrar.",
+    listo: "Ya iniciaste sesión y tu cuenta está activa.",
+    pendiente: "Ya iniciaste sesión. Un administrador debe activar tu cuenta y asignarte una sede antes de que puedas usar la aplicación.",
+    entrar: "Continuar",
+    queHacer: "Si ya habías verificado tu correo, inicia sesión normalmente. Si no, al iniciar sesión podrás pedir un correo de verificación nuevo; abre siempre el más reciente.",
+    irAIniciar: "Ir a iniciar sesión",
   },
 
   semana: {
@@ -512,6 +524,8 @@ export const es = {
   configuracion: {
     titulo: "Configuración",
     descripcion: "Información institucional y de la sede activa",
+    // Para los roles que solo eligen su idioma
+    descripcionPersonal: "Preferencias de la aplicación en este navegador",
     guardarCambios: "Guardar cambios",
     guardados: "Cambios guardados.",
     logoNoImagen: "El logotipo debe ser una imagen (PNG, JPG o SVG).",

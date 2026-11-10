@@ -191,10 +191,8 @@ export const en: Textos = {
     enviarEnlace: "Send link",
     reenviarConfirmacion: "Resend confirmation email",
     confirmacionReenviada: (correo) => (
-      <>We sent another email to <b>{correo}</b>. Open the link and then sign in.</>
+      <>We sent another email to <b>{correo}</b>. Open the link to verify your account.</>
     ),
-    correoConfirmado: "Your email is confirmed. Sign in with your password.",
-    enlaceVencido: "The confirmation link expired or was already used. Sign in: if your email is still unconfirmed, you can request another one.",
   },
 
   auth: {
@@ -222,6 +220,19 @@ export const en: Textos = {
     validando: "Validating the link… If nothing happens, the link may have expired: request a new one from the sign-in screen.",
     nuevaContrasena: "New password",
     guardarYEntrar: "Save and sign in",
+  },
+
+  confirmar: {
+    validando: { titulo: "Verifying your email", subtitulo: undefined },
+    confirmado: { titulo: "Account verified!", subtitulo: "Your email was confirmed successfully." },
+    invalido: { titulo: "This link is no longer valid", subtitulo: "It expired or was already used." },
+    espera: "One moment…",
+    iniciaSesion: "You can now sign in with your email and password. If an administrator hasn’t activated your account yet, you’ll see a notice when you sign in.",
+    listo: "You’re signed in and your account is active.",
+    pendiente: "You’re signed in. An administrator must activate your account and assign you a campus before you can use the app.",
+    entrar: "Continue",
+    queHacer: "If you already verified your email, just sign in. If not, you can request a new verification email when you sign in; always open the most recent one.",
+    irAIniciar: "Go to sign in",
   },
 
   semana: {
@@ -504,6 +515,7 @@ export const en: Textos = {
   configuracion: {
     titulo: "Settings",
     descripcion: "Institutional information and the current campus",
+    descripcionPersonal: "App preferences in this browser",
     guardarCambios: "Save changes",
     guardados: "Changes saved.",
     logoNoImagen: "The logo must be an image (PNG, JPG or SVG).",

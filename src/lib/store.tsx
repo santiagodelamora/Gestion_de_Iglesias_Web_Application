@@ -104,8 +104,9 @@ const falloEntrada = (error: AuthError): FalloEntrada => {
   return { mensaje: t.noSeEntro };
 };
 
-// Los correos de confirmación regresan a /login (agregarla en Redirect URLs)
-const urlConfirmacion = () => `${window.location.origin}/login`;
+// Los correos de confirmación llevan a la página que avisa que la cuenta quedó
+// verificada (app/confirmar). Debe estar en Redirect URLs de Supabase.
+const urlConfirmacion = () => `${window.location.origin}/confirmar`;
 
 const leerSesionGuardada = () => {
   try {
