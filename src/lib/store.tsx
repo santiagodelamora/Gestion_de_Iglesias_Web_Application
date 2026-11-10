@@ -33,15 +33,23 @@ interface Contexto {
   actualizar: (cambio: (db: BaseDatos) => BaseDatos) => void;
   repo: Repositorio;
   usuario: Usuario | null;
-  entrar: (correo: string, contrasena: string) => Promise<string | null>;
+  entrar: (correo: string, contrasena: string) => Promise<FalloEntrada | null>;
   entrarDemo: (usuarioId: string) => void;
   recuperar: (correo: string) => Promise<string | null>;
+  reenviarConfirmacion: (correo: string) => Promise<string | null>;
   registrar: (nombre: string, correo: string, contrasena: string) => Promise<{ error?: string; sesion?: boolean }>;
   cerrarSesion: () => Promise<void>;
   recargar: () => Promise<void>;
   sedeId: string;
   cambiarSede: (sedeId: string) => void;
   hoy: string;
+}
+
+// sinConfirmar: la contraseña es correcta pero el correo no se ha confirmado;
+// la pantalla ofrece reenviar el correo de confirmación
+export interface FalloEntrada {
+  mensaje: string;
+  sinConfirmar?: boolean;
 }
 
 const Ctx = createContext<Contexto | null>(null);
@@ -77,6 +85,27 @@ const mensajeErrorRegistro = (error: AuthError) => {
   if (codigo === "weak_password" || /password/i.test(error.message)) return t.contrasenaInvalida;
   return t.noSeCreo;
 };
+
+// Traduce el error de signInWithPassword. Supabase solo responde
+// email_not_confirmed si la contraseña es correcta, así que distinguirlo no
+// revela qué correos están registrados.
+const falloEntrada = (error: AuthError): FalloEntrada => {
+  const t = textos().auth;
+  if (isAuthRetryableFetchError(error)) return { mensaje: t.sinConexion };
+  switch (error.code) {
+    case "invalid_credentials":
+      return { mensaje: t.credenciales };
+    case "email_not_confirmed":
+      return { mensaje: t.correoSinConfirmar, sinConfirmar: true };
+    case "over_request_rate_limit":
+      return { mensaje: t.demasiadosIntentos };
+  }
+  console.error("Error al iniciar sesión:", error);
+  return { mensaje: t.noSeEntro };
+};
+
+// Los correos de confirmación regresan a /login (agregarla en Redirect URLs)
+const urlConfirmacion = () => `${window.location.origin}/login`;
 
 const leerSesionGuardada = () => {
   try {
@@ -223,7 +252,7 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
       entrar: async (correo, contrasena) => {
         if (modoDemo) {
           const u = db.usuarios.find((x) => x.correo === correo.trim().toLowerCase());
-          if (!u || !contrasena) return textos().auth.credenciales;
+          if (!u || !contrasena) return { mensaje: textos().auth.credenciales };
           setUsuarioId(u.id);
           setSedeId(u.sedeId ?? "");
           guardarSesion(u.id, u.sedeId ?? "");
@@ -233,7 +262,7 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
           email: correo.trim(),
           password: contrasena,
         });
-        if (error) return textos().auth.credenciales;
+        if (error) return falloEntrada(error);
         await recargar();
         return null;
       },
@@ -244,6 +273,19 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
         });
         return error ? textos().auth.correoNoEnviado : null;
       },
+      reenviarConfirmacion: async (correo) => {
+        if (modoDemo) return null;
+        const { error } = await supabaseNavegador().auth.resend({
+          type: "signup",
+          email: correo.trim(),
+          options: { emailRedirectTo: urlConfirmacion() },
+        });
+        if (!error) return null;
+        console.error("Error al reenviar la confirmación:", error);
+        if (isAuthRetryableFetchError(error)) return textos().auth.sinConexion;
+        if (["over_email_send_rate_limit", "over_request_rate_limit"].includes(error.code ?? "")) return textos().auth.limiteCorreos;
+        return textos().auth.correoNoEnviado;
+      },
       // La cuenta nace inactiva y sin sede (trigger crear_perfil): no ve nada
       // hasta que un administrador le asigna rol y sede en Usuarios.
       registrar: async (nombre, correo, contrasena) => {
@@ -251,13 +293,17 @@ export function ProveedorDatos({ children }: { children: React.ReactNode }) {
         const { data, error } = await supabaseNavegador().auth.signUp({
           email: correo.trim(),
           password: contrasena,
-          options: { data: { nombre: nombre.trim() }, emailRedirectTo: `${window.location.origin}/login` },
+          options: { data: { nombre: nombre.trim() }, emailRedirectTo: urlConfirmacion() },
         });
         if (error) {
           // El detalle original queda en la consola para diagnosticar
           console.error("Error al crear la cuenta:", error);
           return { error: mensajeErrorRegistro(error) };
         }
+        // Con la confirmación de correo activa, si el correo ya tiene una cuenta
+        // confirmada Supabase no da error: devuelve un usuario sin identidades
+        // y no envía ningún correo
+        if (data.user && data.user.identities?.length === 0) return { error: textos().auth.cuentaExiste };
         if (data.session) await recargar();
         return { sesion: !!data.session };
       },

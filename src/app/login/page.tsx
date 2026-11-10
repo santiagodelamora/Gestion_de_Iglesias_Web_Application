@@ -6,6 +6,7 @@ import { PantallaAcceso } from "@/components/pantalla-acceso";
 import { Boton, Campo, Entrada, EntradaContrasena } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import { useDatos } from "@/lib/store";
+import { supabaseNavegador } from "@/lib/supabase/cliente";
 import {
   LIMITE,
   useCamposTocados,
@@ -16,9 +17,11 @@ import {
 } from "@/lib/validacion";
 
 type Vista = "entrar" | "recuperar" | "registrar";
+// Avisos de la vista de inicio de sesión sobre la confirmación del correo
+type Nota = "correoConfirmado" | "confirmacionReenviada" | "enlaceVencido";
 
 export default function Login() {
-  const { db, usuario, entrar, recuperar, registrar } = useDatos();
+  const { modo, db, usuario, entrar, recuperar, registrar, reenviarConfirmacion } = useDatos();
   const router = useRouter();
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
@@ -28,6 +31,9 @@ export default function Login() {
   const [enviando, setEnviando] = useState(false);
   const [vista, setVista] = useState<Vista>("entrar");
   const [enviado, setEnviado] = useState(false);
+  const [sinConfirmar, setSinConfirmar] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [nota, setNota] = useState<Nota | null>(null);
   const { t } = useIdioma();
   const tl = t.login;
   const campos = useCamposTocados<"nombre" | "correo" | "contrasena">();
@@ -60,6 +66,8 @@ export default function Login() {
     setVista(v);
     setEnviado(false);
     setError("");
+    setSinConfirmar(false);
+    setNota(null);
     setContrasena("");
     setConfirmacion("");
     campos.reiniciar();
@@ -70,14 +78,51 @@ export default function Login() {
     if (usuario) router.replace(usuario.rol === "miembro" ? "/inicio" : "/panel");
   }, [usuario, router]);
 
+  // El enlace del correo de confirmación pasa por Supabase, que confirma el
+  // correo y regresa aquí con ?code=… (o con error_code si el enlace ya no
+  // sirve). Si el enlace se abre en otro navegador, el cliente no puede abrir
+  // la sesión con ese código, pero el correo ya quedó confirmado.
+  useEffect(() => {
+    if (modo === "demo") return;
+    const url = new URL(window.location.href);
+    const fragmento = new URLSearchParams(url.hash.slice(1));
+    const conError = ["error", "error_code"].some((p) => url.searchParams.has(p) || fragmento.has(p));
+    if (!conError && !url.searchParams.has("code")) return;
+    const limpiar = () => window.history.replaceState(null, "", url.pathname);
+    if (conError) {
+      limpiar();
+      setNota("enlaceVencido");
+      return;
+    }
+    // getSession espera a que el cliente intente canjear el código
+    supabaseNavegador().auth.getSession().then(({ data }) => {
+      if (data.session) return; // con sesión, el efecto de arriba cambia de página
+      limpiar();
+      setNota("correoConfirmado");
+    });
+  }, [modo]);
+
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (hayErrores("correo", "contrasena")) return;
+    setNota(null);
     setEnviando(true);
     const fallo = await entrar(correo, contrasena);
-    setError(fallo ?? "");
+    setError(fallo?.mensaje ?? "");
+    setSinConfirmar(!!fallo?.sinConfirmar);
     // Si entra, el spinner sigue hasta que el efecto de arriba cambia de página
     if (fallo) setEnviando(false);
+  };
+
+  const reenviar = async () => {
+    if (hayErrores("correo")) return;
+    setReenviando(true);
+    const fallo = await reenviarConfirmacion(correo);
+    setReenviando(false);
+    if (fallo) return setError(fallo);
+    setError("");
+    setSinConfirmar(false);
+    setNota("confirmacionReenviada");
   };
 
   const pedirEnlace = async () => {
@@ -157,7 +202,19 @@ export default function Login() {
           <Campo etiqueta={tl.contrasena} error={aviso("contrasena")}>
             <EntradaContrasena autoComplete="current-password" maxLength={LIMITE.contrasena} value={contrasena} onChange={alCambiar("contrasena", setContrasena)} />
           </Campo>
+          {nota === "enlaceVencido" ? (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{tl.enlaceVencido}</p>
+          ) : nota === "correoConfirmado" ? (
+            <p className="rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{tl.correoConfirmado}</p>
+          ) : nota === "confirmacionReenviada" ? (
+            <p className="rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{tl.confirmacionReenviada(correo.trim())}</p>
+          ) : null}
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {sinConfirmar && (
+            <Boton type="button" variante="secundario" className="w-full py-2.5" cargando={reenviando} onClick={reenviar}>
+              {reenviando ? tl.enviando : tl.reenviarConfirmacion}
+            </Boton>
+          )}
           <Boton type="submit" className="w-full py-2.5" cargando={enviando}>{enviando ? tl.entrando : tl.iniciarSesion}</Boton>
           <button type="button" onClick={() => irA("recuperar")} className="w-full text-center text-sm font-semibold text-marca-700 hover:underline">
             {tl.olvidaste}

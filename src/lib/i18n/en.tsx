@@ -189,6 +189,12 @@ export const en: Textos = {
     volver: "Back",
     enviando: "Sending…",
     enviarEnlace: "Send link",
+    reenviarConfirmacion: "Resend confirmation email",
+    confirmacionReenviada: (correo) => (
+      <>We sent another email to <b>{correo}</b>. Open the link and then sign in.</>
+    ),
+    correoConfirmado: "Your email is confirmed. Sign in with your password.",
+    enlaceVencido: "The confirmation link expired or was already used. Sign in: if your email is still unconfirmed, you can request another one.",
   },
 
   auth: {
@@ -201,6 +207,9 @@ export const en: Textos = {
     contrasenaInvalida: "The password isn’t valid. Use at least 8 characters.",
     noSeCreo: "The account couldn’t be created. Try again in a few minutes.",
     credenciales: "Incorrect email or password.",
+    correoSinConfirmar: "You haven’t confirmed your email yet. Open the link we sent when you created the account (check your spam folder too) or request another one.",
+    demasiadosIntentos: "Too many attempts. Wait a few minutes and try again.",
+    noSeEntro: "Couldn’t sign in. Try again in a few minutes.",
     correoNoEnviado: "The email couldn’t be sent. Try again in a few minutes.",
     demoSinCuentas: "Accounts can’t be created in the demo.",
   },

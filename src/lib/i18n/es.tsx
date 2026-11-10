@@ -195,6 +195,13 @@ export const es = {
     volver: "Volver",
     enviando: "Enviando…",
     enviarEnlace: "Enviar enlace",
+    // Confirmación del correo de las cuentas creadas con "Crear cuenta"
+    reenviarConfirmacion: "Reenviar correo de confirmación",
+    confirmacionReenviada: (correo: string) => (
+      <>Te enviamos otro correo a <b>{correo}</b>. Abre el enlace y después inicia sesión.</>
+    ),
+    correoConfirmado: "Tu correo quedó confirmado. Inicia sesión con tu contraseña.",
+    enlaceVencido: "El enlace de confirmación expiró o ya se usó. Inicia sesión: si tu correo sigue sin confirmar, podrás pedir otro.",
   },
 
   // Errores de inicio de sesión, recuperación y registro (store.tsx)
@@ -208,6 +215,9 @@ export const es = {
     contrasenaInvalida: "La contraseña no es válida. Usa al menos 8 caracteres.",
     noSeCreo: "No se pudo crear la cuenta. Intenta de nuevo en unos minutos.",
     credenciales: "Correo o contraseña incorrectos.",
+    correoSinConfirmar: "Aún no confirmas tu correo. Abre el enlace que te enviamos al crear la cuenta (revisa también la carpeta de spam) o pide otro.",
+    demasiadosIntentos: "Demasiados intentos. Espera unos minutos e intenta de nuevo.",
+    noSeEntro: "No se pudo iniciar sesión. Intenta de nuevo en unos minutos.",
     correoNoEnviado: "No se pudo enviar el correo. Intenta de nuevo en unos minutos.",
     demoSinCuentas: "En la demostración no se crean cuentas.",
   },
