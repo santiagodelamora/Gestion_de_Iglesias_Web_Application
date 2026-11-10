@@ -166,8 +166,12 @@ export const es = {
       recuperar: { titulo: "Recupera tu acceso", subtitulo: "Te enviaremos un enlace para restablecer tu contraseña." },
       registrar: { titulo: "Crea tu cuenta", subtitulo: "Un administrador la activará y te asignará tu sede." },
     },
+    // Avisos bajo cada campo (lib/validacion.ts)
     escribeCorreo: "Escribe tu correo electrónico.",
+    correoInvalido: "Escribe un correo válido, por ejemplo nombre@correo.mx.",
     escribeNombre: "Escribe tu nombre.",
+    nombreCorto: "El nombre debe tener al menos 3 caracteres.",
+    escribeContrasena: "Escribe tu contraseña.",
     contrasenaCorta: "La contraseña debe tener al menos 8 caracteres.",
     noCoinciden: "Las contraseñas no coinciden.",
     correoEnviado: (correo: string) => (

@@ -162,7 +162,10 @@ export const en: Textos = {
       registrar: { titulo: "Create your account", subtitulo: "An administrator will activate it and assign your campus." },
     },
     escribeCorreo: "Enter your email address.",
+    correoInvalido: "Enter a valid email, for example name@email.com.",
     escribeNombre: "Enter your name.",
+    nombreCorto: "The name must be at least 3 characters long.",
+    escribeContrasena: "Enter your password.",
     contrasenaCorta: "The password must be at least 8 characters long.",
     noCoinciden: "The passwords don’t match.",
     correoEnviado: (correo) => (
