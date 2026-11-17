@@ -11,6 +11,7 @@ import { acceso } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
 import type { Aportacion, ConceptoAportacion, MetodoPago, Miembro } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
+import { useErrorDeCampo } from "@/lib/validacion";
 
 export default function Donaciones() {
   const { usuario, repo, sedeId, hoy } = useDatos();
@@ -30,6 +31,7 @@ export default function Donaciones() {
   const [hasta, setHasta] = useState(hoy);
   const [form, setForm] = useState<{ fecha: string; monto: string; concepto: ConceptoAportacion; metodo: MetodoPago; miembroId: string; anonima: boolean } | null>(null);
   const [errorForm, setErrorForm] = useState("");
+  const errores = useErrorDeCampo<"monto" | "fecha">();
   const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
@@ -71,8 +73,9 @@ export default function Donaciones() {
   const guardar = async () => {
     if (!form) return;
     const monto = Math.round(Number(form.monto) * 100) / 100;
-    if (!(monto > 0)) return setErrorForm(tdn.montoInvalido);
-    if (!form.fecha) return setErrorForm(tdn.indicaFecha);
+    errores.limpiar();
+    if (!(monto > 0)) return errores.marcar("monto", tdn.montoInvalido);
+    if (!form.fecha) return errores.marcar("fecha", tdn.indicaFecha);
     setGuardando(true);
     const fallo = await intentar(() =>
       repo.aportaciones.crear(sedeId, {
@@ -116,7 +119,7 @@ export default function Donaciones() {
         descripcion={tdn.descripcion}
         acciones={
           puedeRegistrar && (
-            <Boton onClick={() => { setErrorForm(""); setForm({ fecha: hoy, monto: "", concepto: "Diezmo", metodo: "Efectivo", miembroId: "", anonima: false }); }}>
+            <Boton onClick={() => { setErrorForm(""); errores.limpiar(); setForm({ fecha: hoy, monto: "", concepto: "Diezmo", metodo: "Efectivo", miembroId: "", anonima: false }); }}>
               <Plus size={16} /> {tdn.registrar}
             </Boton>
           )
@@ -142,7 +145,8 @@ export default function Donaciones() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Tarjeta className="lg:col-span-2">
           <h2 className="border-b border-piedra-200 p-4 font-semibold">{tdn.movimientos}</h2>
-          <div className="max-h-[520px] overflow-y-auto">
+          {/* Se puede enfocar para desplazar la lista con el teclado, aun sin botones dentro */}
+          <div tabIndex={0} role="region" aria-label={tdn.movimientos} className="max-h-[520px] overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marca-500">
             <Tabla>
               <thead>
                 <tr>
@@ -218,8 +222,8 @@ export default function Donaciones() {
         {form && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Campo etiqueta={t.comun.fecha}><Entrada type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Campo>
-              <Campo etiqueta={tdn.montoMxn}><Entrada type="number" min="1" step="0.01" value={form.monto} onChange={(e) => setForm({ ...form, monto: e.target.value })} /></Campo>
+              <Campo etiqueta={t.comun.fecha} error={errores.de("fecha")}><Entrada id="campo-fecha" type="date" value={form.fecha} onChange={(e) => { setForm({ ...form, fecha: e.target.value }); errores.limpiar("fecha"); }} /></Campo>
+              <Campo etiqueta={tdn.montoMxn} error={errores.de("monto")}><Entrada id="campo-monto" type="number" min="1" step="0.01" inputMode="decimal" value={form.monto} onChange={(e) => { setForm({ ...form, monto: e.target.value }); errores.limpiar("monto"); }} /></Campo>
               <Campo etiqueta={tdn.concepto}>
                 <Selector value={form.concepto} onChange={(e) => setForm({ ...form, concepto: e.target.value as ConceptoAportacion })}>
                   {CONCEPTOS.map((c) => <option key={c} value={c}>{t.catalogos.conceptos[c]}</option>)}

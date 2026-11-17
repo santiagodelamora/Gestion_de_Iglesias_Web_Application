@@ -13,6 +13,7 @@ import { useDatos } from "@/lib/store";
 import { recortar } from "@/lib/texto";
 import type { Evento, Miembro, Ministerio, TipoEvento } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
+import { useErrorDeCampo } from "@/lib/validacion";
 
 type Form = Omit<Evento, "id" | "sedeId" | "cancelado">;
 
@@ -38,6 +39,7 @@ export default function Eventos() {
   const [form, setForm] = useState<Form | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState("");
+  const errores = useErrorDeCampo<"titulo" | "fecha">();
   const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
@@ -72,7 +74,7 @@ export default function Eventos() {
 
   const abrirNuevo = (fecha = hoy) => {
     setEditandoId(null);
-    setErrorForm("");
+    setErrorForm(""); errores.limpiar();
     setForm({
       titulo: "",
       tipo: permiso === "ministerio" ? "Reunión de ministerio" : "Culto dominical",
@@ -88,7 +90,7 @@ export default function Eventos() {
   const abrirEdicion = (e: Evento) => {
     setSeleccionado(null);
     setEditandoId(e.id);
-    setErrorForm("");
+    setErrorForm(""); errores.limpiar();
     setForm({ titulo: e.titulo, tipo: e.tipo, fecha: e.fecha, hora: e.hora, lugar: e.lugar, descripcion: e.descripcion, responsables: e.responsables, ministerioId: e.ministerioId });
   };
 
@@ -96,8 +98,9 @@ export default function Eventos() {
     if (!form) return;
     // Los textos se guardan sin espacios al principio ni al final
     const datos = recortar(form);
-    if (!datos.titulo) return setErrorForm(t.comun.tituloObligatorio);
-    if (!datos.fecha || !datos.hora) return setErrorForm(te.indicaFechaHora);
+    errores.limpiar();
+    if (!datos.titulo) return errores.marcar("titulo", t.comun.tituloObligatorio);
+    if (!datos.fecha || !datos.hora) return errores.marcar("fecha", te.indicaFechaHora);
     setGuardando(true);
     const fallo = await intentar(() => (editandoId ? repo.eventos.editar(editandoId, datos) : repo.eventos.crear(sedeId, datos)));
     setGuardando(false);
@@ -228,7 +231,7 @@ export default function Eventos() {
       >
         {form && (
           <>
-            <Campo etiqueta={t.comun.titulo}><Entrada value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.titulo} error={errores.de("titulo")}><Entrada id="campo-titulo" value={form.titulo} onChange={(e) => { setForm({ ...form, titulo: e.target.value }); errores.limpiar("titulo"); }} /></Campo>
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo etiqueta={te.tipo}>
                 <Selector value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoEvento })}>
@@ -241,7 +244,7 @@ export default function Eventos() {
                   {ministeriosElegibles.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
                 </Selector>
               </Campo>
-              <Campo etiqueta={t.comun.fecha}><Entrada type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} /></Campo>
+              <Campo etiqueta={t.comun.fecha} error={errores.de("fecha")}><Entrada id="campo-fecha" type="date" value={form.fecha} onChange={(e) => { setForm({ ...form, fecha: e.target.value }); errores.limpiar("fecha"); }} /></Campo>
               <Campo etiqueta={t.comun.hora}><Entrada type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} /></Campo>
             </div>
             <Campo etiqueta={te.lugar}><Entrada value={form.lugar} onChange={(e) => setForm({ ...form, lugar: e.target.value })} /></Campo>

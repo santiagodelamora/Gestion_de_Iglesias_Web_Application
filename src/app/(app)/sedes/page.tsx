@@ -9,12 +9,14 @@ import type { DatosSede } from "@/lib/repositorio/tipos";
 import { useDatos } from "@/lib/store";
 import { recortar } from "@/lib/texto";
 import { intentar } from "@/lib/usar-carga";
+import { useErrorDeCampo } from "@/lib/validacion";
 
 export default function Sedes() {
   const { db, modo, usuario, repo, recargar, sedeId, cambiarSede } = useDatos();
   const [form, setForm] = useState<DatosSede | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const errores = useErrorDeCampo<"nombre">();
   const [guardando, setGuardando] = useState(false);
   const { t } = useIdioma();
   const ts = t.sedes;
@@ -25,13 +27,15 @@ export default function Sedes() {
     setEditandoId(id);
     setForm(datos);
     setError("");
+    errores.limpiar();
   };
 
   const guardar = async () => {
     if (!form) return;
     // Los textos se guardan sin espacios al principio ni al final
     const datos = recortar(form);
-    if (!datos.nombre) return setError(t.comun.nombreObligatorio);
+    errores.limpiar();
+    if (!datos.nombre) return errores.marcar("nombre", t.comun.nombreObligatorio);
     setGuardando(true);
     const fallo = await intentar(() => (editandoId ? repo.sedes.editar(editandoId, datos) : repo.sedes.crear(datos)));
     if (!fallo) await recargar();
@@ -91,7 +95,7 @@ export default function Sedes() {
       >
         {form && (
           <>
-            <Campo etiqueta={t.comun.nombre}><Entrada value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.nombre} error={errores.de("nombre")}><Entrada id="campo-nombre" value={form.nombre} onChange={(e) => { setForm({ ...form, nombre: e.target.value }); errores.limpiar("nombre"); }} /></Campo>
             <Campo etiqueta={t.comun.direccion}><Entrada value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} /></Campo>
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo etiqueta={t.comun.telefono}><Entrada value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} /></Campo>

@@ -11,6 +11,7 @@ import { useDatos } from "@/lib/store";
 import { recortar } from "@/lib/texto";
 import type { Evento, Miembro, Ministerio } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
+import { useErrorDeCampo } from "@/lib/validacion";
 
 export default function Ministerios() {
   const { usuario, repo, sedeId, hoy } = useDatos();
@@ -34,6 +35,7 @@ export default function Ministerios() {
   const [nuevo, setNuevo] = useState<{ nombre: string; descripcion: string; coordinadorId: string } | null>(null);
   const [agregar, setAgregar] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
+  const errores = useErrorDeCampo<"nombre">();
   const [guardando, setGuardando] = useState(false);
   const { confirmar, notificar } = useConfirmacion();
   const { t } = useIdioma();
@@ -60,7 +62,8 @@ export default function Ministerios() {
     if (!nuevo) return;
     // Los textos se guardan sin espacios al principio ni al final
     const datosNuevo = recortar({ nombre: nuevo.nombre, descripcion: nuevo.descripcion, coordinadorId: nuevo.coordinadorId || undefined });
-    if (!datosNuevo.nombre) return setErrorAccion(t.comun.nombreObligatorio);
+    errores.limpiar();
+    if (!datosNuevo.nombre) return errores.marcar("nombre", t.comun.nombreObligatorio);
     if (await ejecutar(() => repo.ministerios.crear(sedeId, datosNuevo))) setNuevo(null);
   };
 
@@ -81,7 +84,7 @@ export default function Ministerios() {
       <Encabezado
         titulo={tmi.titulo}
         descripcion={tmi.descripcion}
-        acciones={puedeCrear && <Boton onClick={() => { setErrorAccion(""); setNuevo({ nombre: "", descripcion: "", coordinadorId: "" }); }}><Plus size={16} /> {tmi.nuevo}</Boton>}
+        acciones={puedeCrear && <Boton onClick={() => { setErrorAccion(""); errores.limpiar(); setNuevo({ nombre: "", descripcion: "", coordinadorId: "" }); }}><Plus size={16} /> {tmi.nuevo}</Boton>}
       />
       {(error || (errorAccion && !abierto && !nuevo)) && (
         <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>
@@ -135,7 +138,7 @@ export default function Ministerios() {
             </Campo>
             {puedeEditar(abierto) && (
               <div className="flex gap-2">
-                <Selector value={agregar} onChange={(e) => setAgregar(e.target.value)}>
+                <Selector aria-label={tmi.vincular} value={agregar} onChange={(e) => setAgregar(e.target.value)}>
                   <option value="">{tmi.vincular}</option>
                   {miembros.filter((x) => x.activo && !abierto.integrantes.includes(x.id)).map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
                 </Selector>
@@ -190,7 +193,7 @@ export default function Ministerios() {
       >
         {nuevo && (
           <>
-            <Campo etiqueta={t.comun.nombre}><Entrada value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.nombre} error={errores.de("nombre")}><Entrada id="campo-nombre" value={nuevo.nombre} onChange={(e) => { setNuevo({ ...nuevo, nombre: e.target.value }); errores.limpiar("nombre"); }} /></Campo>
             <Campo etiqueta={t.comun.descripcion}><AreaTexto value={nuevo.descripcion} onChange={(e) => setNuevo({ ...nuevo, descripcion: e.target.value })} /></Campo>
             <Campo etiqueta={t.comun.coordinador}>
               <Selector value={nuevo.coordinadorId} onChange={(e) => setNuevo({ ...nuevo, coordinadorId: e.target.value })}>

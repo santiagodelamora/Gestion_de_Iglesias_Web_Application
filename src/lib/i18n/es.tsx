@@ -110,6 +110,7 @@ export const es = {
   },
 
   ui: {
+    irAlInicio: "Ir a mi página de inicio",
     deslizarTabla: "Desliza a la izquierda para ver todas las columnas",
     tablaDesplazable: "Tabla con más columnas a la derecha; usa las flechas para desplazarla",
     mostrarContrasena: "Mostrar contraseña",
@@ -466,6 +467,7 @@ export const es = {
     cuentaActiva: "Cuenta activa (desmarca para bloquear el acceso)",
     miembroVinculado: "Registro de miembro vinculado",
     obligatorios: "Nombre y correo son obligatorios.",
+    correoObligatorio: "El correo es obligatorio.",
     creadoDemo: "Usuario creado (demostración).",
     invitacionEnviada: (correo: string) => `Se envió la invitación a ${correo}.`,
     confirmarTitulo: "Bloquear acceso",
