@@ -26,6 +26,7 @@ export default function Miembros() {
   const [editando, setEditando] = useState<Miembro | "nuevo" | null>(null);
   const [form, setForm] = useState(vacio);
   const [errorForm, setErrorForm] = useState("");
+  const [faltaNombre, setFaltaNombre] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [errorAccion, setErrorAccion] = useState("");
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
@@ -49,13 +50,20 @@ export default function Miembros() {
   const abrir = (m: Miembro | "nuevo") => {
     setEditando(m);
     setErrorForm("");
+    setFaltaNombre(false);
     setForm(m === "nuevo" ? { ...vacio, fechaIngreso: hoy } : { nombre: m.nombre, telefono: m.telefono, correo: m.correo, fechaIngreso: m.fechaIngreso });
   };
 
   const guardar = async () => {
     // Los textos se guardan sin espacios al principio ni al final
     const datos = recortar(form);
-    if (!datos.nombre) return setErrorForm(t.comun.nombreObligatorio);
+    // El aviso va bajo el campo (en rojo, como en el inicio de sesión) y el foco
+    // vuelve a él para corregirlo de inmediato
+    if (!datos.nombre) {
+      setFaltaNombre(true);
+      document.getElementById("miembro-nombre")?.focus();
+      return;
+    }
     setGuardando(true);
     const fallo = await intentar(() =>
       editando === "nuevo" ? repo.miembros.crear(sedeId, datos) : repo.miembros.editar((editando as Miembro).id, datos)
@@ -97,16 +105,16 @@ export default function Miembros() {
         <div className="flex flex-wrap gap-3 border-b border-piedra-200 p-4">
           <div className="relative min-w-60 flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-piedra-400" />
-            <Entrada className="pl-9" placeholder={tm.buscar} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+            <Entrada className="pl-9" aria-label={tm.buscar} placeholder={tm.buscar} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
           </div>
-          <Selector className="max-w-40" value={filtro} onChange={(e) => setFiltro(e.target.value as Filtro)}>
+          <Selector className="max-w-40" aria-label={tm.filtroEstado} value={filtro} onChange={(e) => setFiltro(e.target.value as Filtro)}>
             <option value="activos">{tm.filtros.activos}</option>
             <option value="inactivos">{tm.filtros.inactivos}</option>
             <option value="todos">{tm.filtros.todos}</option>
           </Selector>
         </div>
-        {errorAccion && <p className="m-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorAccion}</p>}
-        {error && <p className="m-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {errorAccion && <p role="alert" className="m-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorAccion}</p>}
+        {error && <p role="alert" className="m-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <Tabla>
           <thead>
             <tr>
@@ -152,13 +160,15 @@ export default function Miembros() {
         alCerrar={() => setEditando(null)}
         pie={<><Boton variante="secundario" onClick={() => setEditando(null)}>{t.comun.cancelar}</Boton><Boton cargando={guardando} onClick={guardar}>{t.comun.guardar}</Boton></>}
       >
-        <Campo etiqueta={t.comun.nombreCompleto}><Entrada value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></Campo>
+        <Campo etiqueta={t.comun.nombreCompleto} error={faltaNombre && !form.nombre.trim() ? t.comun.nombreObligatorio : undefined}>
+          <Entrada id="miembro-nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+        </Campo>
         <div className="grid gap-4 sm:grid-cols-2">
           <Campo etiqueta={t.comun.telefono}><Entrada value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} /></Campo>
           <Campo etiqueta={tm.fechaIngreso}><Entrada type="date" value={form.fechaIngreso} onChange={(e) => setForm({ ...form, fechaIngreso: e.target.value })} /></Campo>
         </div>
         <Campo etiqueta={t.comun.correoElectronico}><Entrada type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} /></Campo>
-        {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
+        {errorForm && <p role="alert" className="text-sm text-red-700">{errorForm}</p>}
       </Modal>
     </>
   );

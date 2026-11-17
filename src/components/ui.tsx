@@ -175,6 +175,31 @@ const modalesAbiertos: object[] = [];
 
 const enfocables = "input:not([type=hidden]):not(:disabled), select:not(:disabled), textarea:not(:disabled)";
 
+// Todo lo que el tabulador puede alcanzar dentro de un contenedor
+const tabulables =
+  'a[href], button:not(:disabled), input:not([type=hidden]):not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+
+// Mantiene el foco dentro de un diálogo: Tab en el último vuelve al primero y
+// Mayús+Tab en el primero salta al último, sin pasar a la página de atrás.
+export function atraparFoco(e: KeyboardEvent, caja: HTMLElement) {
+  const lista = [...caja.querySelectorAll<HTMLElement>(tabulables)].filter((el) => el.getClientRects().length > 0);
+  if (lista.length === 0) {
+    e.preventDefault();
+    caja.focus();
+    return;
+  }
+  const primero = lista[0];
+  const ultimo = lista[lista.length - 1];
+  const actual = document.activeElement;
+  if (e.shiftKey && (actual === primero || !caja.contains(actual))) {
+    e.preventDefault();
+    ultimo.focus();
+  } else if (!e.shiftKey && (actual === ultimo || !caja.contains(actual))) {
+    e.preventDefault();
+    primero.focus();
+  }
+}
+
 export function Modal({
   titulo,
   abierto,
@@ -205,7 +230,9 @@ export function Modal({
     const caja = dialogo.current;
     (caja?.querySelector<HTMLElement>("[data-autofocus]") ?? caja?.querySelector<HTMLElement>(enfocables) ?? caja)?.focus();
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && modalesAbiertos.at(-1) === este) cerrar.current();
+      if (modalesAbiertos.at(-1) !== este) return;
+      if (e.key === "Escape") cerrar.current();
+      else if (e.key === "Tab" && caja) atraparFoco(e, caja);
     };
     document.addEventListener("keydown", alTeclear);
     return () => {
@@ -237,7 +264,7 @@ export function Modal({
           <h2 className="font-titulo text-[1.375rem] font-medium leading-tight text-piedra-900">{titulo}</h2>
           <button
             onClick={alCerrar}
-            className="rounded-md p-1.5 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-700"
+            className="rounded-md p-1.5 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500"
             aria-label={t.comun.cerrar}
           >
             <X size={18} />
@@ -251,13 +278,39 @@ export function Modal({
   );
 }
 
+// Si la tabla no cabe (en móvil), avisa que hay más columnas a la derecha y el
+// contenedor se puede enfocar para desplazarlo con las flechas del teclado.
 export function Tabla({ children }: { children: ReactNode }) {
+  const caja = useRef<HTMLDivElement>(null);
+  const [desborda, setDesborda] = useState(false);
+  const { t } = useIdioma();
+  useEffect(() => {
+    const el = caja.current;
+    if (!el) return;
+    const medir = () => setDesborda(el.scrollWidth > el.clientWidth + 1);
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(el);
+    if (el.firstElementChild) observador.observe(el.firstElementChild);
+    return () => observador.disconnect();
+  }, []);
   return (
-    <div className="overflow-x-auto">
+    <>
+      {desborda && (
+        <p className="flex items-center gap-1.5 px-4 pt-3 text-xs text-piedra-600" aria-hidden="true">
+          {t.ui.deslizarTabla} <span aria-hidden="true">→</span>
+        </p>
+      )}
+    <div
+      ref={caja}
+      className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-marca-500"
+      {...(desborda ? { tabIndex: 0, role: "region", "aria-label": t.ui.tablaDesplazable } : {})}
+    >
       <table className="w-full text-left text-sm [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-marca-50/50 [&_tbody_tr:last-child_td]:border-b-0">
         {children}
       </table>
     </div>
+    </>
   );
 }
 

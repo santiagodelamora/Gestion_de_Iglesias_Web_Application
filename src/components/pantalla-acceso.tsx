@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import { useIdioma } from "@/lib/i18n";
 
@@ -19,6 +19,10 @@ export function PantallaAcceso({
   children: ReactNode;
 }) {
   const { t } = useIdioma();
+  // Título de la pestaña: la acción de esta pantalla y la iglesia
+  useEffect(() => {
+    document.title = `${titulo} · ${nombre}`;
+  }, [titulo, nombre]);
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden overflow-hidden bg-marca-900 py-14 pl-28 pr-12 text-marca-50 lg:flex lg:flex-col lg:justify-between xl:pr-20">

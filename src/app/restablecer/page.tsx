@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PantallaAcceso } from "@/components/pantalla-acceso";
@@ -15,6 +16,9 @@ export default function Restablecer() {
   const { db, modo, recargar } = useDatos();
   const router = useRouter();
   const [listo, setListo] = useState(false);
+  // Si tras unos segundos no hay sesión, el enlace no sirve (vencido, ya usado o
+  // se abrió la página sin enlace): se dice claramente y se ofrece volver.
+  const [vencido, setVencido] = useState(false);
   const [contrasena, setContrasena] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
   const [error, setError] = useState("");
@@ -40,7 +44,11 @@ export default function Restablecer() {
       supabase.auth.getSession().then(({ data }) => setListo(!!data.session));
     }
     const { data } = supabase.auth.onAuthStateChange((_evento, sesion) => setListo(!!sesion));
-    return () => data.subscription.unsubscribe();
+    const espera = window.setTimeout(() => setVencido(true), 6000);
+    return () => {
+      data.subscription.unsubscribe();
+      window.clearTimeout(espera);
+    };
   }, [modo]);
 
   const guardar = async (e: React.FormEvent) => {
@@ -66,7 +74,19 @@ export default function Restablecer() {
       {modo === "demo" ? (
         <p className="text-sm text-piedra-600">{t.restablecer.soloSupabase}</p>
       ) : !listo ? (
-        <p className="text-sm text-piedra-600">{t.restablecer.validando}</p>
+        <div className="space-y-4">
+          {vencido ? (
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{t.restablecer.enlaceInvalido}</p>
+          ) : (
+            <p role="status" className="text-sm text-piedra-600">{t.restablecer.validando}</p>
+          )}
+          <Link
+            href="/login"
+            className="inline-flex w-full items-center justify-center rounded-lg border border-piedra-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-piedra-800 transition-colors hover:border-piedra-400 hover:bg-piedra-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500 focus-visible:ring-offset-2"
+          >
+            {t.restablecer.volverAlInicio}
+          </Link>
+        </div>
       ) : (
         <form onSubmit={guardar} noValidate className="space-y-4">
           {/* Mismo campo con botón de ojo que en el inicio de sesión y el registro */}
@@ -84,7 +104,7 @@ export default function Restablecer() {
           <Campo etiqueta={t.login.confirmarContrasena}>
             <EntradaContrasena autoComplete="new-password" maxLength={LIMITE.contrasena} value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
           </Campo>
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <Boton type="submit" className="w-full py-2.5" cargando={guardando}>{guardando ? t.comun.guardando : t.restablecer.guardarYEntrar}</Boton>
         </form>
       )}

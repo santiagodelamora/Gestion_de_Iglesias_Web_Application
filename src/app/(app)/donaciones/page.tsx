@@ -127,7 +127,7 @@ export default function Donaciones() {
           <Lock size={14} /> {tdn.soloLectura}
         </p>
       )}
-      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
+      {(error || errorAccion) && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
 
       <Tarjeta className="mb-4 flex flex-wrap items-end gap-3 p-4">
         <Campo etiqueta={t.comun.desde}><Entrada type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></Campo>
@@ -243,7 +243,7 @@ export default function Donaciones() {
                 </Selector>
               </Campo>
             )}
-            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
+            {errorForm && <p role="alert" className="text-sm text-red-700">{errorForm}</p>}
           </>
         )}
       </Modal>

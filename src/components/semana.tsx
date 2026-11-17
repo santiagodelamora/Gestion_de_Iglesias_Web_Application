@@ -41,7 +41,7 @@ export function Semana({ eventos, hoy }: { eventos: Evento[]; hoy: string }) {
               {(i === 0 || d.getDate() === 1) && <span className="ml-1 text-xs text-piedra-500">{t.fechas.meses[d.getMonth()].slice(0, 3)}</span>}
             </p>
             <ul className="min-w-0 flex-1 space-y-2.5">
-              {delDia.length === 0 && <li className="pt-1 text-sm text-piedra-400 md:hidden">{t.semana.sinActividades}</li>}
+              {delDia.length === 0 && <li className="pt-1 text-sm text-piedra-600 md:hidden">{t.semana.sinActividades}</li>}
               {delDia.map((e) => (
                 <li key={e.id} className="text-sm leading-snug">
                   <span className="mr-2 text-xs tabular-nums text-piedra-500 md:mr-0 md:block">{e.hora}</span>

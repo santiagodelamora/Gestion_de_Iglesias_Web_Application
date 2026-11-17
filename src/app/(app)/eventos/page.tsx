@@ -141,7 +141,7 @@ export default function Eventos() {
         descripcion={te.descripcion}
         acciones={puedeEditar() && <Boton onClick={() => abrirNuevo()}><Plus size={16} /> {te.nuevo}</Boton>}
       />
-      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
+      {(error || errorAccion) && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
       <Tarjeta>
         <div className="flex items-center justify-between border-b border-piedra-200 p-4">
           <h2 className="font-titulo text-2xl font-medium capitalize">{t.fechas.meses[m - 1]} {a}</h2>
@@ -161,7 +161,7 @@ export default function Eventos() {
             return (
               <div
                 key={d.fecha}
-                className={`min-h-24 border-b border-r border-piedra-100 p-1.5 ${d.delMes ? "" : "bg-piedra-50/60 text-piedra-400"}`}
+                className={`min-h-24 border-b border-r border-piedra-100 p-1.5 ${d.delMes ? "" : "bg-piedra-50/60 text-piedra-600"}`}
                 onDoubleClick={() => puedeEditar() && abrirNuevo(d.fecha)}
               >
                 <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs tabular-nums ${
@@ -175,7 +175,7 @@ export default function Eventos() {
                       key={e.id}
                       onClick={() => setSeleccionado(e)}
                       className={`block w-full truncate rounded-sm px-1.5 py-0.5 text-left text-[11px] ${
-                        e.cancelado ? "bg-piedra-100 text-piedra-400 line-through" : e.ministerioId ? "bg-olivo-50 text-olivo-800" : "bg-marca-50 text-marca-800"
+                        e.cancelado ? "bg-piedra-100 text-piedra-600 line-through" : e.ministerioId ? "bg-olivo-50 text-olivo-800" : "bg-marca-50 text-marca-800"
                       }`}
                     >
                       {e.hora} {e.titulo}
@@ -256,7 +256,7 @@ export default function Eventos() {
               </Selector>
             </Campo>
             <Campo etiqueta={t.comun.descripcion}><AreaTexto value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} /></Campo>
-            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
+            {errorForm && <p role="alert" className="text-sm text-red-700">{errorForm}</p>}
           </>
         )}
       </Modal>
