@@ -36,7 +36,7 @@ export default function Inicio() {
   return (
     <>
       <Encabezado titulo={t.inicio.bienvenida(usuario!.nombre.split(" ")[0])} descripcion={sede ? `${sede.nombre}, ${sede.direccion}` : undefined} />
-      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <Semana eventos={eventos} hoy={hoy} />
 

@@ -97,7 +97,7 @@ export default function Sedes() {
               <Campo etiqueta={t.comun.telefono}><Entrada value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} /></Campo>
               <Campo etiqueta={t.comun.correo}><Entrada type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} /></Campo>
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
           </>
         )}
       </Modal>

@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ProveedorConfirmacion, useConfirmacion } from "@/components/confirmacion";
 import { Logo } from "@/components/logo";
-import { Boton, Selector, Tarjeta } from "@/components/ui";
+import { atraparFoco, Boton, Selector, Tarjeta } from "@/components/ui";
 import { useIdioma, type Textos } from "@/lib/i18n";
 import { puedeVer, type Modulo } from "@/lib/permisos";
 import { useDatos } from "@/lib/store";
@@ -87,6 +87,35 @@ function Marco({ children }: { children: React.ReactNode }) {
     if (!usuario) router.replace("/login");
   }, [usuario, router]);
   useEffect(() => setMenuAbierto(false), [ruta]);
+
+  // Título de la pestaña del navegador: la sección actual y la iglesia, para
+  // distinguir las pestañas y que el lector de pantalla anuncie dónde se está
+  const nombreIglesia = db.configuracion.nombre;
+  useEffect(() => {
+    const seccion = ENLACES.find((e) => ruta.startsWith(e.href));
+    document.title = seccion ? `${t.menu.enlaces[seccion.texto]} · ${nombreIglesia}` : nombreIglesia;
+  }, [ruta, t, nombreIglesia]);
+
+  // Menú lateral en móvil: se comporta como un diálogo. Al abrirlo el foco entra
+  // al primer enlace, Esc lo cierra, Tab no sale de él y al cerrarlo el foco
+  // regresa al botón que lo abrió.
+  const cajon = useRef<HTMLElement>(null);
+  const botonMenu = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const caja = cajon.current;
+    caja?.querySelector<HTMLElement>("a[aria-current='page'], a[href]")?.focus();
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuAbierto(false);
+      else if (e.key === "Tab" && caja) atraparFoco(e, caja);
+    };
+    document.addEventListener("keydown", alTeclear);
+    const boton = botonMenu.current;
+    return () => {
+      document.removeEventListener("keydown", alTeclear);
+      boton?.focus();
+    };
+  }, [menuAbierto]);
 
   if (!usuario) return null;
 
@@ -213,7 +242,7 @@ function Marco({ children }: { children: React.ReactNode }) {
           onClick={() => tras(salir)}
           title={t.comun.cerrarSesion}
           aria-label={t.comun.cerrarSesion}
-          className="rounded-md p-2 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-800"
+          className="rounded-md p-2 text-piedra-400 transition hover:bg-piedra-100 hover:text-piedra-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500"
         >
           <LogOut size={16} />
         </button>
@@ -223,27 +252,47 @@ function Marco({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Para teclado: salta el menú y lleva directo al contenido de la página */}
+      <a
+        href="#contenido"
+        className="sr-only z-[70] rounded-md bg-marca-700 px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        {t.menu.saltarContenido}
+      </a>
       <div className="flex min-h-screen">
         <aside className="fixed inset-y-0 hidden w-64 lg:block print:hidden">{barra}</aside>
         {menuAbierto && (
           <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMenuAbierto(false)}>
             <div className="absolute inset-0 animate-aparecer bg-piedra-950/45" />
-            <aside className="absolute inset-y-0 w-72 animate-deslizar shadow-2xl" onClick={(e) => e.stopPropagation()}>{barra}</aside>
+            <aside
+              ref={cajon}
+              id="menu-movil"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t.menu.menuNavegacion}
+              className="absolute inset-y-0 w-72 animate-deslizar shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {barra}
+            </aside>
           </div>
         )}
         <div className="min-w-0 flex-1 lg:pl-64 print:pl-0">
           <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-piedra-200 bg-white/90 px-4 py-2.5 backdrop-blur lg:hidden print:hidden">
             <button
-              className="rounded-md p-1.5 text-piedra-600 hover:bg-piedra-100"
+              ref={botonMenu}
+              className="rounded-md p-1.5 text-piedra-600 hover:bg-piedra-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500"
               onClick={() => setMenuAbierto(true)}
               aria-label={t.menu.abrirMenu}
+              aria-expanded={menuAbierto}
+              aria-controls="menu-movil"
             >
               <Menu size={20} />
             </button>
             <p className="min-w-0 truncate font-titulo text-lg font-medium text-piedra-900">{db.configuracion.nombre}</p>
           </header>
           {/* La clave repite la entrada suave en cada cambio de página */}
-          <main key={ruta} className="mx-auto max-w-7xl animate-entrar px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+          <main key={ruta} id="contenido" tabIndex={-1} className="mx-auto outline-none max-w-7xl animate-entrar px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
             {children}
           </main>
         </div>

@@ -150,7 +150,7 @@ export default function Configuracion() {
         </label>
       </Tarjeta>
       {mensaje && (
-        <p className={`mb-4 rounded-lg px-3 py-2 text-sm ${mensaje.ok ? "bg-olivo-50 text-olivo-700" : "bg-red-50 text-red-700"}`}>{mensaje.texto}</p>
+        <p role={mensaje.ok ? "status" : "alert"} className={`mb-4 rounded-lg px-3 py-2 text-sm ${mensaje.ok ? "bg-olivo-50 text-olivo-700" : "bg-red-50 text-red-700"}`}>{mensaje.texto}</p>
       )}
       <fieldset disabled={soloLectura} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Tarjeta className="space-y-4 p-5">
@@ -194,11 +194,11 @@ export default function Configuracion() {
           </ul>
           {!soloLectura && (
             <div className="mt-3 grid gap-2 sm:grid-cols-[140px_120px_1fr_auto]">
-              <Selector value={nuevo.dia} onChange={(e) => setNuevo({ ...nuevo, dia: e.target.value })}>
+              <Selector aria-label={tcf.diaHorario} value={nuevo.dia} onChange={(e) => setNuevo({ ...nuevo, dia: e.target.value })}>
                 {DIAS.map((d) => <option key={d} value={d}>{dia(d)}</option>)}
               </Selector>
-              <Entrada type="time" value={nuevo.hora} onChange={(e) => setNuevo({ ...nuevo, hora: e.target.value })} />
-              <Entrada placeholder={tcf.tipoReunion} value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value })} />
+              <Entrada type="time" aria-label={tcf.horaHorario} value={nuevo.hora} onChange={(e) => setNuevo({ ...nuevo, hora: e.target.value })} />
+              <Entrada aria-label={tcf.tipoReunion} placeholder={tcf.tipoReunion} value={nuevo.tipo} onChange={(e) => setNuevo({ ...nuevo, tipo: e.target.value })} />
               {/* Sin tipo de reunión no hay horario que agregar */}
               <Boton type="button" disabled={!nuevo.tipo.trim()} onClick={agregarHorario}><Plus size={16} /> {t.comun.agregar}</Boton>
             </div>

@@ -104,7 +104,7 @@ export default function Usuarios() {
         }
       />
       {aviso && <p className="mb-4 rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{aviso}</p>}
-      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
+      {(error || errorAccion) && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
       <Tarjeta>
         <Tabla>
           <thead>
@@ -148,7 +148,7 @@ export default function Usuarios() {
             <SelectoresRolSede rol={nuevo.rol} sedeId={nuevo.sedeId} alCambiar={(rol, s) => setNuevo({ ...nuevo, rol, sedeId: s, miembroId: s === nuevo.sedeId ? nuevo.miembroId : undefined })} />
             <VinculoMiembro sedeId={nuevo.sedeId} miembroId={nuevo.miembroId} alCambiar={(miembroId) => setNuevo({ ...nuevo, miembroId })} />
             <p className="text-xs text-piedra-500">{tu.avisoInvitacion}</p>
-            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
+            {errorForm && <p role="alert" className="text-sm text-red-700">{errorForm}</p>}
           </>
         )}
       </Modal>
@@ -167,7 +167,7 @@ export default function Usuarios() {
               <input type="checkbox" checked={editando.activo} onChange={(e) => setEditando({ ...editando, activo: e.target.checked })} />
               {tu.cuentaActiva}
             </label>
-            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
+            {errorForm && <p role="alert" className="text-sm text-red-700">{errorForm}</p>}
           </>
         )}
       </Modal>

@@ -83,7 +83,7 @@ export default function Comunicados() {
           )
         }
       />
-      {(error || errorAccion) && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
+      {(error || errorAccion) && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>}
       <div className="space-y-3">
         {cargando && <Vacio>{t.comun.cargando}</Vacio>}
         {!cargando && lista.length === 0 && <Tarjeta><Vacio>{tc.sinAnuncios}</Vacio></Tarjeta>}
@@ -145,7 +145,7 @@ export default function Comunicados() {
               <input type="checkbox" checked={form.importante} onChange={(e) => setForm({ ...form, importante: e.target.checked })} />
               {tc.marcarImportante}
             </label>
-            {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
+            {errorForm && <p role="alert" className="text-sm text-red-700">{errorForm}</p>}
           </>
         )}
       </Modal>

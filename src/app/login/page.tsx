@@ -141,7 +141,7 @@ export default function Login() {
                 <EntradaContrasena autoComplete="new-password" maxLength={LIMITE.contrasena} value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />
               </Campo>
             </div>
-            {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             <Boton type="submit" className="w-full py-2.5" cargando={enviando}>{enviando ? tl.creandoCuenta : tl.crearCuenta}</Boton>
             <p className="text-center text-sm text-piedra-600">
               {tl.yaTienesCuenta}{" "}
@@ -157,12 +157,12 @@ export default function Login() {
           <Campo etiqueta={tl.contrasena} error={aviso("contrasena")}>
             <EntradaContrasena autoComplete="current-password" maxLength={LIMITE.contrasena} value={contrasena} onChange={alCambiar("contrasena", setContrasena)} />
           </Campo>
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <Boton type="submit" className="w-full py-2.5" cargando={enviando}>{enviando ? tl.entrando : tl.iniciarSesion}</Boton>
           <button type="button" onClick={() => irA("recuperar")} className="w-full text-center text-sm font-semibold text-marca-700 hover:underline">
             {tl.olvidaste}
           </button>
-          <div className="flex items-center gap-3 pt-2 text-xs text-piedra-400">
+          <div className="flex items-center gap-3 pt-2 text-xs text-piedra-600">
             <span className="h-px flex-1 bg-piedra-200" />
             {tl.eresNuevo}
             <span className="h-px flex-1 bg-piedra-200" />
@@ -175,7 +175,7 @@ export default function Login() {
             <Entrada type="email" maxLength={LIMITE.correo} value={correo} onChange={alCambiar("correo", setCorreo)} placeholder={tl.correoPlaceholder} />
           </Campo>
           {enviado && <p className="rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{tl.enlaceEnviado}</p>}
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <div className="flex gap-2">
             <Boton variante="secundario" onClick={() => irA("entrar")}>{tl.volver}</Boton>
             <Boton className="flex-1" cargando={enviando} onClick={pedirEnlace}>{enviando ? tl.enviando : tl.enviarEnlace}</Boton>

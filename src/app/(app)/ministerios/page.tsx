@@ -84,7 +84,7 @@ export default function Ministerios() {
         acciones={puedeCrear && <Boton onClick={() => { setErrorAccion(""); setNuevo({ nombre: "", descripcion: "", coordinadorId: "" }); }}><Plus size={16} /> {tmi.nuevo}</Boton>}
       />
       {(error || (errorAccion && !abierto && !nuevo)) && (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>
+        <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error || errorAccion}</p>
       )}
       {!cargando && ministerios.length === 0 && (
         <Tarjeta className="p-8 text-center text-sm text-piedra-500">{tmi.sinMinisterios}</Tarjeta>
@@ -169,7 +169,7 @@ export default function Ministerios() {
                 </li>
               ))}
             </ul>
-            {errorAccion && <p className="text-sm text-red-600">{errorAccion}</p>}
+            {errorAccion && <p role="alert" className="text-sm text-red-700">{errorAccion}</p>}
             <div>
               <h3 className="mb-2 text-sm font-semibold">{tmi.actividades}</h3>
               <ul className="space-y-1 text-sm text-piedra-600">
@@ -198,7 +198,7 @@ export default function Ministerios() {
                 {miembros.filter((x) => x.activo).map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
               </Selector>
             </Campo>
-            {errorAccion && <p className="text-sm text-red-600">{errorAccion}</p>}
+            {errorAccion && <p role="alert" className="text-sm text-red-700">{errorAccion}</p>}
           </>
         )}
       </Modal>

@@ -142,7 +142,7 @@ export default function Asistencia() {
   return (
     <>
       <Encabezado titulo={ta.titulo} descripcion={ta.descripcion} />
-      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <Tarjeta className="lg:col-span-3">
           <div className="grid gap-3 border-b border-piedra-200 p-4 sm:grid-cols-2">
@@ -170,7 +170,7 @@ export default function Asistencia() {
                 </div>
               </div>
               {guardado && <p className="mx-4 mb-3 rounded-lg bg-olivo-50 px-3 py-2 text-sm text-olivo-700">{ta.guardada}</p>}
-              {errorGuardar && <p className="mx-4 mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorGuardar}</p>}
+              {errorGuardar && <p role="alert" className="mx-4 mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorGuardar}</p>}
               <ul className="max-h-[480px] divide-y divide-piedra-100 overflow-y-auto">
                 {visibles.map((m) => (
                   <li key={m.id} className="flex items-center justify-between px-4 py-2">

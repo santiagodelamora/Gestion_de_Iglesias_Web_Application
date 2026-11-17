@@ -127,7 +127,7 @@ export default function Panel() {
             <p className="mb-4 text-sm text-piedra-500">{tp.ultimosDomingos}</p>
             <div className="h-60">
               <ResponsiveContainer>
-                <AreaChart data={datos.cultos} margin={{ left: -20, right: 8, top: 4 }}>
+                <AreaChart accessibilityLayer={false} data={datos.cultos} margin={{ left: -20, right: 8, top: 4 }}>
                   <CartesianGrid stroke={CUADRICULA} vertical={false} />
                   {/* Las fechas se formatean al pintar, en el idioma activo */}
                   <XAxis dataKey="fecha" tick={EJE} axisLine={false} tickLine={false} tickFormatter={fechaDiaMes} />
@@ -156,7 +156,7 @@ export default function Panel() {
             <p className="mb-4 text-sm text-piedra-500">{tp.ingresosDetalle}</p>
             <div className="h-60">
               <ResponsiveContainer>
-                <BarChart data={datos.ingresos} margin={{ left: 0, right: 8, top: 4 }}>
+                <BarChart accessibilityLayer={false} data={datos.ingresos} margin={{ left: 0, right: 8, top: 4 }}>
                   <CartesianGrid stroke={CUADRICULA} vertical={false} />
                   <XAxis dataKey="mes" tick={EJE} axisLine={false} tickLine={false} tickFormatter={mesCorto} />
                   <YAxis tick={EJE} axisLine={false} tickLine={false} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
