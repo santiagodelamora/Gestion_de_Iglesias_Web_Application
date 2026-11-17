@@ -12,6 +12,7 @@ import { useDatos } from "@/lib/store";
 import { recortar } from "@/lib/texto";
 import type { Anuncio } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
+import { useErrorDeCampo } from "@/lib/validacion";
 
 export default function Comunicados() {
   const { db, usuario, repo, sedeId, hoy } = useDatos();
@@ -20,6 +21,7 @@ export default function Comunicados() {
   const [form, setForm] = useState<DatosAnuncio | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState("");
+  const errores = useErrorDeCampo<"titulo">();
   const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
   const { confirmar, notificar } = useConfirmacion();
@@ -39,7 +41,7 @@ export default function Comunicados() {
 
   const abrir = (datos: DatosAnuncio, id: string | null) => {
     setEditandoId(id);
-    setErrorForm("");
+    setErrorForm(""); errores.limpiar();
     setForm(datos);
   };
 
@@ -47,7 +49,8 @@ export default function Comunicados() {
     if (!form) return;
     // Los textos se guardan sin espacios al principio ni al final
     const datos = recortar(form);
-    if (!datos.titulo) return setErrorForm(t.comun.tituloObligatorio);
+    errores.limpiar();
+    if (!datos.titulo) return errores.marcar("titulo", t.comun.tituloObligatorio);
     setGuardando(true);
     const fallo = await intentar(() => (editandoId ? repo.anuncios.editar(editandoId, datos) : repo.anuncios.crear(datos)));
     setGuardando(false);
@@ -124,7 +127,7 @@ export default function Comunicados() {
       >
         {form && (
           <>
-            <Campo etiqueta={t.comun.titulo}><Entrada value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.titulo} error={errores.de("titulo")}><Entrada id="campo-titulo" value={form.titulo} onChange={(e) => { setForm({ ...form, titulo: e.target.value }); errores.limpiar("titulo"); }} /></Campo>
             <Campo etiqueta={tc.contenido}><AreaTexto value={form.contenido} onChange={(e) => setForm({ ...form, contenido: e.target.value })} /></Campo>
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo etiqueta={tc.fechaPublicacion}>

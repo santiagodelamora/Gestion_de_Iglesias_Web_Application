@@ -88,6 +88,16 @@ function Marco({ children }: { children: React.ReactNode }) {
   }, [usuario, router]);
   useEffect(() => setMenuAbierto(false), [ruta]);
 
+  // Cada rol tiene su propia portada: el Miembro, Inicio; los demás, el Panel.
+  // Si se abre la otra por dirección, se lleva a la que le corresponde (el Panel
+  // mostraría cifras incompletas a un Miembro).
+  const rolActual = usuario?.rol;
+  useEffect(() => {
+    if (!rolActual) return;
+    if (rolActual === "miembro" && ruta.startsWith("/panel")) router.replace("/inicio");
+    else if (rolActual !== "miembro" && ruta.startsWith("/inicio")) router.replace("/panel");
+  }, [rolActual, ruta, router]);
+
   // Título de la pestaña del navegador: la sección actual y la iglesia, para
   // distinguir las pestañas y que el lector de pantalla anuncie dónde se está
   const nombreIglesia = db.configuracion.nombre;

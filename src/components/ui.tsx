@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff, Inbox, LoaderCircle, Lock, X } from "lucide-react";
 import { createContext, useContext, useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useIdioma } from "@/lib/i18n";
 
@@ -331,8 +332,15 @@ export function SinAcceso() {
   return (
     <Tarjeta className="flex flex-col items-center p-12 text-center">
       <Lock size={22} className="mb-3 text-piedra-400" />
-      <p className="font-titulo text-xl font-medium text-piedra-900">{t.ui.sinAccesoTitulo}</p>
-      <p className="mt-1 text-sm text-piedra-500">{t.ui.sinAccesoTexto}</p>
+      {/* Es el título de la pantalla: un h1 para el lector de pantalla */}
+      <h1 className="font-titulo text-xl font-medium text-piedra-900">{t.ui.sinAccesoTitulo}</h1>
+      <p className="mt-1 text-sm text-piedra-600">{t.ui.sinAccesoTexto}</p>
+      <Link
+        href="/"
+        className="mt-6 inline-flex items-center justify-center rounded-lg border border-piedra-300 bg-white px-3.5 py-2 text-sm font-semibold text-piedra-800 transition-colors hover:border-piedra-400 hover:bg-piedra-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-500 focus-visible:ring-offset-2"
+      >
+        {t.ui.irAlInicio}
+      </Link>
     </Tarjeta>
   );
 }

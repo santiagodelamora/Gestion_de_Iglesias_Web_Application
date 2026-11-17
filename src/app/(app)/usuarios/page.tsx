@@ -12,6 +12,7 @@ import { useDatos } from "@/lib/store";
 import { recortar } from "@/lib/texto";
 import type { Miembro, Rol, Usuario } from "@/lib/types";
 import { intentar, useCarga } from "@/lib/usar-carga";
+import { useErrorDeCampo } from "@/lib/validacion";
 
 export default function Usuarios() {
   const { db, modo, usuario, repo, sedeId } = useDatos();
@@ -20,6 +21,7 @@ export default function Usuarios() {
   const [nuevo, setNuevo] = useState<DatosInvitacion | null>(null);
   const [editando, setEditando] = useState<Usuario | null>(null);
   const [errorForm, setErrorForm] = useState("");
+  const errores = useErrorDeCampo<"nombre" | "correo">();
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
@@ -46,7 +48,9 @@ export default function Usuarios() {
     if (!nuevo) return;
     // Los textos se guardan sin espacios al principio ni al final
     const datos = recortar(nuevo);
-    if (!datos.nombre || !datos.correo) return setErrorForm(tu.obligatorios);
+    errores.limpiar();
+    if (!datos.nombre) return errores.marcar("nombre", t.comun.nombreObligatorio);
+    if (!datos.correo) return errores.marcar("correo", tu.correoObligatorio);
     ejecutar(() => repo.usuarios.invitar(datos), () => {
       setNuevo(null);
       setAviso(modo === "demo" ? tu.creadoDemo : tu.invitacionEnviada(datos.correo));
@@ -97,7 +101,7 @@ export default function Usuarios() {
         descripcion={tu.descripcion}
         acciones={
           puedeEditar && (
-            <Boton onClick={() => { setErrorForm(""); setNuevo({ nombre: "", correo: "", rol: "secretario", sedeId }); }}>
+            <Boton onClick={() => { setErrorForm(""); errores.limpiar(); setNuevo({ nombre: "", correo: "", rol: "secretario", sedeId }); }}>
               <Plus size={16} /> {tu.invitar}
             </Boton>
           )
@@ -143,8 +147,8 @@ export default function Usuarios() {
       >
         {nuevo && (
           <>
-            <Campo etiqueta={t.comun.nombre}><Entrada value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} /></Campo>
-            <Campo etiqueta={t.comun.correo}><Entrada type="email" value={nuevo.correo} onChange={(e) => setNuevo({ ...nuevo, correo: e.target.value })} /></Campo>
+            <Campo etiqueta={t.comun.nombre} error={errores.de("nombre")}><Entrada id="campo-nombre" value={nuevo.nombre} onChange={(e) => { setNuevo({ ...nuevo, nombre: e.target.value }); errores.limpiar("nombre"); }} /></Campo>
+            <Campo etiqueta={t.comun.correo} error={errores.de("correo")}><Entrada id="campo-correo" type="email" value={nuevo.correo} onChange={(e) => { setNuevo({ ...nuevo, correo: e.target.value }); errores.limpiar("correo"); }} /></Campo>
             <SelectoresRolSede rol={nuevo.rol} sedeId={nuevo.sedeId} alCambiar={(rol, s) => setNuevo({ ...nuevo, rol, sedeId: s, miembroId: s === nuevo.sedeId ? nuevo.miembroId : undefined })} />
             <VinculoMiembro sedeId={nuevo.sedeId} miembroId={nuevo.miembroId} alCambiar={(miembroId) => setNuevo({ ...nuevo, miembroId })} />
             <p className="text-xs text-piedra-500">{tu.avisoInvitacion}</p>

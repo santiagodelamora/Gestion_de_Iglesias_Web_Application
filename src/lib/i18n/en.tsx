@@ -106,6 +106,7 @@ export const en: Textos = {
   },
 
   ui: {
+    irAlInicio: "Go to my home page",
     deslizarTabla: "Swipe left to see all columns",
     tablaDesplazable: "Table with more columns to the right; use the arrow keys to scroll it",
     mostrarContrasena: "Show password",
@@ -459,6 +460,7 @@ export const en: Textos = {
     cuentaActiva: "Active account (uncheck to block access)",
     miembroVinculado: "Linked member record",
     obligatorios: "Name and email are required.",
+    correoObligatorio: "Email is required.",
     creadoDemo: "User created (demo).",
     invitacionEnviada: (correo) => `The invitation was sent to ${correo}.`,
     confirmarTitulo: "Block access",

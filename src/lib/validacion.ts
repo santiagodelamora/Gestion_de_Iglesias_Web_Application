@@ -57,3 +57,18 @@ export function useCamposTocados<C extends string>() {
     },
   };
 }
+
+// Formularios de los módulos: el aviso de error va bajo el campo que lo causa
+// (en rojo y enlazado con aria-describedby por <Campo>) y el foco vuelve a ese
+// campo, que debe tener id="campo-<nombre>". El aviso se quita al escribir.
+export function useErrorDeCampo<C extends string>() {
+  const [error, setError] = useState<{ campo: C; mensaje: string } | null>(null);
+  return {
+    de: (campo: C) => (error?.campo === campo ? error.mensaje : undefined),
+    marcar: (campo: C, mensaje: string) => {
+      setError({ campo, mensaje });
+      requestAnimationFrame(() => document.getElementById(`campo-${campo}`)?.focus());
+    },
+    limpiar: (campo?: C) => setError((e) => (!campo || e?.campo === campo ? null : e)),
+  };
+}
